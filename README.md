@@ -174,6 +174,12 @@ In the KSeF → GOBL direction the parsed invoice is likewise given the `currenc
 rounding rule, and `AdjustRounding` reconciles the calculated total against
 `P_15`, since KSeF rounds each line before summing.
 
+`TKwotowy` is fixed at two decimal places whatever the currency, so the ten
+FA(3) currencies with finer subunits — BHD, KWD, OMR and the like — cannot be
+represented at all. `BuildFavat` reports those rather than emit XML the schema
+would reject. Currencies with fewer decimals, such as JPY, are fine: the
+fractional part is optional.
+
 ## Units of measure (P_8A)
 
 KSeF accepts free-form unit strings, while GOBL takes a defined unit key with

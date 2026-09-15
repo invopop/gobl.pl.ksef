@@ -67,7 +67,7 @@ All Polish invoices must be identified with a specific type code defined by the 
 | ------- | ------------- | ------------ | ---------------------------------- |
 | VAT     | `standard`    |              | Regular invoice                    |
 | UPR     | `standard`    | `simplified` | Simplified (no customer)           |
-| ZAL     | `standard`    | `partial`    | Advance invioce                    |
+| ZAL     | `standard`    | `partial`    | Advance invoice                    |
 | ROZ     | `standard`    | `settlement` | Settlement invoice                 |
 | KOR     | `credit-note` |              | Credit note for regular invoice    |
 | KOR_ZAL | `credit-note` | `partial`    | Credit note for advance invoice    |

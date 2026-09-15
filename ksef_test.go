@@ -5,8 +5,8 @@ import (
 
 	"github.com/invopop/gobl"
 	ksef "github.com/invopop/gobl.pl.ksef"
-	"github.com/invopop/gobl.pl.ksef/test"
 	favat "github.com/invopop/gobl.pl.ksef/addon"
+	"github.com/invopop/gobl.pl.ksef/test"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
@@ -146,6 +146,62 @@ func TestBuildFAVAT(t *testing.T) {
 		require.NoError(t, err)
 
 		test.ValidateAgainstFA3Schema(t, data)
+	})
+}
+
+// TestBuildFAVATCurrencyPrecision covers the FA(3) limit of two decimal places
+// on every amount, which a currency with finer subunits cannot satisfy.
+func TestBuildFAVATCurrencyPrecision(t *testing.T) {
+	newInvoice := func(cur currency.Code) *bill.Invoice {
+		inv := &bill.Invoice{
+			Addons:    tax.WithAddons(favat.V3),
+			IssueDate: cal.MakeDate(2024, 6, 15),
+			Code:      "TEST-1",
+			Currency:  cur,
+			Supplier: &org.Party{
+				Name:  "Supplier",
+				TaxID: &tax.Identity{Country: l10n.PL.Tax(), Code: "9876543210"},
+			},
+			Customer: &org.Party{
+				Name:  "Customer",
+				TaxID: &tax.Identity{Country: l10n.PL.Tax(), Code: "1111111111"},
+			},
+			Lines: []*bill.Line{
+				{
+					Quantity: num.MakeAmount(3, 0),
+					Item:     &org.Item{Name: "Item", Price: num.NewAmount(3333, 3)},
+					Taxes:    tax.Set{{Category: tax.CategoryVAT, Percent: num.NewPercentage(23, 2)}},
+				},
+			},
+		}
+		if cur != currency.PLN {
+			inv.ExchangeRates = []*currency.ExchangeRate{
+				{From: cur, To: currency.PLN, Amount: num.MakeAmount(106, 1)},
+			}
+		}
+		return inv
+	}
+
+	t.Run("rejects a currency with more than two decimal places", func(t *testing.T) {
+		// Bahraini dinar has three subunits, and FA(3) lists it, so rounding
+		// to the currency would still leave P_11 and P_15 unrepresentable.
+		env, err := gobl.Envelop(newInvoice(currency.BHD))
+		require.NoError(t, err)
+
+		_, err = ksef.BuildFavat(env)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "BHD has 3 decimal places")
+	})
+
+	t.Run("accepts a currency with fewer decimal places", func(t *testing.T) {
+		// Japanese yen has none, and TKwotowy makes the fraction optional.
+		env, err := gobl.Envelop(newInvoice(currency.JPY))
+		require.NoError(t, err)
+
+		doc, err := ksef.BuildFavat(env)
+		require.NoError(t, err)
+		require.Len(t, doc.Inv.Lines, 1)
+		assert.Equal(t, "10", doc.Inv.Lines[0].NetPriceTotal)
 	})
 }
 
