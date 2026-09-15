@@ -188,7 +188,8 @@ measure read from KSeF is mapped as follows:
 
 Going the other way, P_8A is taken from `unit-label` if present, then from the
 `untdid-unit` extension, and finally from the standard mapping of the GOBL unit
-key. Units without a UN/ECE equivalent leave P_8A empty.
+key. Every unit GOBL defines has an exact UNTDID equivalent, so only an item
+without a unit at all leaves P_8A empty.
 
 ## Settlement Invoices (ROZ)
 

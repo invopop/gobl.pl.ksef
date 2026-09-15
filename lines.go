@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/invopop/gobl/addons/eu/en16931"
 	favat "github.com/invopop/gobl.pl.ksef/addon"
+	"github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/catalogues/untdid"
@@ -152,7 +152,9 @@ func vatRate(tc *tax.Combo) string {
 // that do not match a GOBL unit key or UN/ECE code — that original value is
 // used so KSeF round-trips preserve the supplier's wording. Otherwise the
 // UN/ECE code is taken from the item's `untdid-unit` extension, falling back
-// to the standard mapping of the GOBL unit key.
+// to the standard mapping of the GOBL unit key. Every unit GOBL defines has
+// an exact UNTDID equivalent, so only an item without a unit at all leaves
+// P_8A empty.
 func lineMeasure(line *bill.Line) string {
 	if u, ok := line.Item.Meta[metaKeyUnitLabel]; ok && u != "" {
 		return u

@@ -108,7 +108,36 @@ func TestNewLines(t *testing.T) {
 		assert.Equal(t, "SZT", result[0].Measure)
 	})
 
-	t.Run("leaves the measure empty for an unmappable unit key", func(t *testing.T) {
+	t.Run("maps every GOBL unit key to a measure", func(t *testing.T) {
+		// Since GOBL v0.506.1 every defined unit has an exact UNTDID
+		// equivalent, so a line carrying a unit always yields a P_8A.
+		price, _ := num.AmountFromString("100.00")
+		qty, _ := num.AmountFromString("1")
+		total, _ := num.AmountFromString("100.00")
+
+		for _, def := range org.UnitDefinitions {
+			lines := []*bill.Line{
+				{
+					Index:    1,
+					Quantity: qty,
+					Item: &org.Item{
+						Name:  "Item",
+						Price: &price,
+						Unit:  def.Key,
+					},
+					Total: &total,
+					Taxes: tax.Set{&tax.Combo{Category: tax.CategoryVAT, Percent: num.NewPercentage(23, 2)}},
+				},
+			}
+
+			result := ksef.NewLines(lines)
+
+			require.Len(t, result, 1)
+			assert.NotEmpty(t, result[0].Measure, "unit %s has no UN/ECE code", def.Key)
+		}
+	})
+
+	t.Run("leaves the measure empty when the item has no unit", func(t *testing.T) {
 		price, _ := num.AmountFromString("100.00")
 		qty, _ := num.AmountFromString("1")
 		total, _ := num.AmountFromString("100.00")
@@ -120,7 +149,6 @@ func TestNewLines(t *testing.T) {
 				Item: &org.Item{
 					Name:  "Item",
 					Price: &price,
-					Unit:  org.UnitPortion, // non-standard, no UN/ECE equivalent
 				},
 				Total: &total,
 				Taxes: tax.Set{&tax.Combo{Category: tax.CategoryVAT, Percent: num.NewPercentage(23, 2)}},
