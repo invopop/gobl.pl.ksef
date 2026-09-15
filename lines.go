@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	favat "github.com/invopop/gobl.pl.ksef/addon"
-	"github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/catalogues/untdid"
@@ -162,7 +161,7 @@ func lineMeasure(line *bill.Line) string {
 	if code := line.Item.Ext.Get(untdid.ExtKeyUnit); code != cbc.CodeEmpty {
 		return code.String()
 	}
-	return en16931.UnitToUNTDID(line.Item.Unit).String()
+	return untdid.UnitCode(line.Item.Unit).String()
 }
 
 func lineDiscount(line *bill.Line) string {
@@ -267,7 +266,7 @@ func (l *Line) ToGOBL() (*bill.Line, error) {
 			line.Item.Ext = line.Item.Ext.Merge(tax.ExtensionsOf(cbc.CodeMap{
 				untdid.ExtKeyUnit: code,
 			}))
-			line.Item.Unit = en16931.UnitFromUNTDID(code)
+			line.Item.Unit = untdid.UnitKey(code)
 		default:
 			if line.Item.Meta == nil {
 				line.Item.Meta = cbc.Meta{}
