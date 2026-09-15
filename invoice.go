@@ -60,12 +60,12 @@ type Inv struct {
 	CorrectionReason                   string                       `xml:"PrzyczynaKorekty,omitempty"`
 	CorrectionType                     string                       `xml:"TypKorekty,omitempty"`
 	CorrectedInv                       []*CorrectedInv              `xml:"DaneFaKorygowanej,omitempty"`
-	AdvanceInvoices                    []*AdvanceInvoiceRef         `xml:"FakturaZaliczkowa,omitempty"`
 	PartialAdvancePayments             []*PartialAdvancePayment     `xml:"ZaliczkaCzesciowa,omitempty"`
 	FP                                 int                          `xml:"FP,omitempty"`
 	TP                                 int                          `xml:"TP,omitempty"`
-	ExciseTaxRefund                    int                          `xml:"ZwrotAkcyzy,omitempty"`
 	AdditionalDescription              []*AdditionalDescriptionLine `xml:"DodatkowyOpis,omitempty"`
+	AdvanceInvoices                    []*AdvanceInvoiceRef         `xml:"FakturaZaliczkowa,omitempty"`
+	ExciseTaxRefund                    int                          `xml:"ZwrotAkcyzy,omitempty"`
 	Lines                              []*Line                      `xml:"FaWiersz,omitempty"` // empty for ZAL and KOR_ZAL, use Order instead
 	Settlement                         *Settlement                  `xml:"Rozliczenie,omitempty"`
 	Payment                            *Payment                     `xml:"Platnosc,omitempty"`

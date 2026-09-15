@@ -20,7 +20,7 @@ import (
 //
 //	go test -tags xsdvalidate ./test -run TestConvertAndValidateAll -v
 func TestConvertAndValidateAll(t *testing.T) {
-	dataPath := GetDataPath()
+	dataPath := GetGOBLPath()
 
 	entries, err := os.ReadDir(dataPath)
 	require.NoError(t, err)

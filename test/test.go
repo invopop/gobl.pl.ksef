@@ -141,6 +141,12 @@ func GetSchemaPath() string {
 	return filepath.Join(GetDataPath(), "schema")
 }
 
+// GetGOBLPath returns the path to the `test/data/gobl.ksef` folder, which
+// holds the GOBL documents used as input for conversion to KSeF.
+func GetGOBLPath() string {
+	return filepath.Join(GetDataPath(), "gobl.ksef")
+}
+
 // GetOutPath returns the path to the `test/data/gobl.ksef/out` folder
 func GetOutPath() string {
 	return filepath.Join(GetDataPath(), "gobl.ksef", "out")
