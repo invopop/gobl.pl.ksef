@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/beevik/etree v1.6.0
 	github.com/go-resty/resty/v2 v2.16.5
-	github.com/invopop/gobl v0.506.1-0.20260915151153-4e5c9e3792ba
+	github.com/invopop/gobl v0.507.0
 	github.com/invopop/xmldsig v0.13.0
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.9.1
