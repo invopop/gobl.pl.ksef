@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	ksef_api "github.com/invopop/gobl.ksef/api"
-	"github.com/invopop/gobl.ksef/test"
+	ksef_api "github.com/invopop/gobl.pl.ksef/api"
+	"github.com/invopop/gobl.pl.ksef/test"
 	"github.com/invopop/xmldsig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	ksef_api "github.com/invopop/gobl.ksef/api"
+	ksef_api "github.com/invopop/gobl.pl.ksef/api"
 	"github.com/invopop/xmldsig"
 	"github.com/stretchr/testify/assert"
 )

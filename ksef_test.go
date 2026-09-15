@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/invopop/gobl"
-	ksef "github.com/invopop/gobl.ksef"
-	"github.com/invopop/gobl.ksef/test"
-	"github.com/invopop/gobl/addons/pl/favat"
+	ksef "github.com/invopop/gobl.pl.ksef"
+	"github.com/invopop/gobl.pl.ksef/test"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"

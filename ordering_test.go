@@ -3,7 +3,7 @@ package ksef_test
 import (
 	"testing"
 
-	ksef "github.com/invopop/gobl.ksef"
+	ksef "github.com/invopop/gobl.pl.ksef"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"

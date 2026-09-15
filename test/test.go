@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/invopop/gobl"
-	ksef "github.com/invopop/gobl.ksef"
+	ksef "github.com/invopop/gobl.pl.ksef"
 	"github.com/invopop/gobl/bill"
 )
 

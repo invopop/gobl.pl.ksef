@@ -1,6 +1,29 @@
-# GOBL ↔ KSeF Conversion
+# 🇵🇱 GOBL Poland KSeF
 
-Bidirectional conversion between GOBL and the Polish FA_VAT XML format (KSeF).
+The Polish KSeF module for GOBL: the `pl-favat-v3` addon and bidirectional
+conversion between GOBL and the FA_VAT XML format.
+
+The module is laid out in two parts:
+
+- [`addon/`](addon) — the `pl-favat-v3` GOBL addon (extensions, scenarios,
+  normalization and validation rules). See its [README](addon/README.md).
+- the root package — the FA_VAT XML converter and the KSeF API client, built
+  on top of the addon.
+
+## Installation
+
+```bash
+go get github.com/invopop/gobl.pl.ksef
+```
+
+The addon registers itself on import. Consumers that only need GOBL documents
+declaring `pl-favat-v3` to normalize and validate can blank-import it:
+
+```go
+import _ "github.com/invopop/gobl.pl.ksef/addon"
+```
+
+Importing the root converter package pulls the addon in automatically.
 
 ## Main Conversion Entrypoints
 

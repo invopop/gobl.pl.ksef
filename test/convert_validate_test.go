@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	ksef "github.com/invopop/gobl.ksef"
+	ksef "github.com/invopop/gobl.pl.ksef"
 	"github.com/stretchr/testify/require"
 )
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/invopop/gobl/addons/eu/en16931"
-	"github.com/invopop/gobl/addons/pl/favat"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/catalogues/untdid"

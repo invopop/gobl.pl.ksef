@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	ksef "github.com/invopop/gobl.ksef"
-	"github.com/invopop/gobl/addons/pl/favat"
+	ksef "github.com/invopop/gobl.pl.ksef"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/l10n"
