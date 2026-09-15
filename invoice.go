@@ -570,14 +570,14 @@ func (inv *Inv) parseInvoiceData(goblInv *bill.Invoice) error {
 			if err != nil {
 				return fmt.Errorf("parsing period start date: %w", err)
 			}
-			goblInv.Ordering.Period.Start = start
+			goblInv.Ordering.Period.Start = &start
 		}
 		if inv.Period.EndDate != "" {
 			end, err := parseDate(inv.Period.EndDate)
 			if err != nil {
 				return fmt.Errorf("parsing period end date: %w", err)
 			}
-			goblInv.Ordering.Period.End = end
+			goblInv.Ordering.Period.End = &end
 		}
 	}
 
@@ -627,7 +627,7 @@ func (inv *Inv) parseInvoiceData(goblInv *bill.Invoice) error {
 				preceding.Reason = inv.CorrectionReason
 			}
 			if inv.CorrectionType != "" {
-				preceding.Ext = tax.ExtensionsOf(tax.ExtMap{
+				preceding.Ext = tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyEffectiveDate: cbc.Code(inv.CorrectionType),
 				})
 			}
@@ -881,7 +881,7 @@ func (inv *Inv) parsePrepaymentTotals(goblInv *bill.Invoice) error {
 			Key:     e.key,
 			Base:    netAmt,
 			Percent: e.percent,
-			Ext: tax.ExtensionsOf(tax.ExtMap{
+			Ext: tax.ExtensionsOf(cbc.CodeMap{
 				favat.ExtKeyTaxCategory: e.category,
 			}),
 		}

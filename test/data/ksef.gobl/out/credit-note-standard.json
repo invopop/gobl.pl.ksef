@@ -73,7 +73,10 @@
         "item": {
           "name": "Software Development Services",
           "price": "10.00",
-          "unit": "HUR"
+          "unit": "h",
+          "ext": {
+            "untdid-unit": "HUR"
+          }
         },
         "sum": "100.00",
         "taxes": [

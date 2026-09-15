@@ -8,6 +8,7 @@ import (
 	"github.com/invopop/gobl/addons/pl/favat"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/pay"
 	"github.com/invopop/gobl/tax"
@@ -49,7 +50,7 @@ func TestNewPayment(t *testing.T) {
 		payment := &bill.PaymentDetails{
 			Instructions: &pay.Instructions{
 				Key: "credit-transfer",
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyPaymentMeans: "6", // credit transfer code
 				}),
 			},
@@ -143,7 +144,7 @@ func TestNewPayment(t *testing.T) {
 
 		payment := &bill.PaymentDetails{
 			Terms: &pay.Terms{
-				DueDates: []*pay.DueDate{{Date: &d, Amount: num}},
+				DueDates: []*pay.DueDate{{Date: &d, Amount: &num}},
 			},
 		}
 		totals := &bill.Totals{}
@@ -175,7 +176,7 @@ func TestNewPayment(t *testing.T) {
 		require.NoError(t, err)
 
 		payment := &bill.PaymentDetails{
-			Advances: []*pay.Advance{{Date: &d, Amount: firstNum}},
+			Advances: []*pay.Record{{Date: &d, Amount: firstNum}},
 		}
 		totals := &bill.Totals{
 			Due:      &zero,
@@ -208,10 +209,10 @@ func TestNewPayment(t *testing.T) {
 		require.NoError(t, err)
 
 		payment := &bill.PaymentDetails{
-			Advances: []*pay.Advance{{
+			Advances: []*pay.Record{{
 				Date:   &d,
 				Amount: amt,
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyPaymentMeans: "1", // cash
 				}),
 			}},
@@ -248,7 +249,7 @@ func TestNewPayment(t *testing.T) {
 		require.NoError(t, err)
 
 		payment := &bill.PaymentDetails{
-			Advances: []*pay.Advance{{Date: &d, Amount: firstNum}, {Date: &d, Amount: secondNum}},
+			Advances: []*pay.Record{{Date: &d, Amount: firstNum}, {Date: &d, Amount: secondNum}},
 		}
 		totals := &bill.Totals{
 			Due:      &secondNum,
@@ -284,7 +285,7 @@ func TestNewPayment(t *testing.T) {
 		require.NoError(t, err)
 
 		payment := &bill.PaymentDetails{
-			Advances: []*pay.Advance{{Date: &d, Amount: firstNum}, {Date: &d, Amount: secondNum}},
+			Advances: []*pay.Record{{Date: &d, Amount: firstNum}, {Date: &d, Amount: secondNum}},
 		}
 		totals := &bill.Totals{
 			Due:      &zero,

@@ -42,8 +42,14 @@ type OrderLine struct {
 }
 
 // newInvoicePeriod converts GOBL ordering period to KSeF InvoicePeriod.
+// OkresFa requires both P_6_Od and P_6_Do, so a GOBL period carrying only one
+// of the two — which the schema has allowed since GOBL v0.505 — is omitted
+// rather than emitted as an incomplete element.
 func newInvoicePeriod(ordering *bill.Ordering) *InvoicePeriod {
 	if ordering == nil || ordering.Period == nil {
+		return nil
+	}
+	if ordering.Period.Start == nil || ordering.Period.End == nil {
 		return nil
 	}
 

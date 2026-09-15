@@ -8,6 +8,7 @@ import (
 	ksef "github.com/invopop/gobl.ksef"
 	"github.com/invopop/gobl/addons/pl/favat"
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/l10n"
 	"github.com/invopop/gobl/org"
 	"github.com/invopop/gobl/tax"
@@ -660,7 +661,7 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "1234567890",
 				Country: l10n.PL.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					"some-other-key": "value",
 				}),
 			},
@@ -677,7 +678,7 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "9876543210",
 				Country: l10n.PL.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "1", // Factor
 				}),
 			},
@@ -699,7 +700,7 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "DE123456789",
 				Country: l10n.DE.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "2",
 				}),
 			},
@@ -721,7 +722,7 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "12-3456789",
 				Country: l10n.US.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "3",
 				}),
 			},
@@ -743,7 +744,7 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "",
 				Country: l10n.PL.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "4",
 				}),
 			},
@@ -764,7 +765,7 @@ func TestNewThirdParties(t *testing.T) {
 		inv.Supplier.Identities = []*org.Identity{
 			{
 				Code: "ABC123456",
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "4",
 				}),
 			},
@@ -793,7 +794,7 @@ func TestNewThirdParties(t *testing.T) {
 				{
 					Code:    "2222222222",
 					Country: l10n.PL.ISO(),
-					Ext: tax.ExtensionsOf(tax.ExtMap{
+					Ext: tax.ExtensionsOf(cbc.CodeMap{
 						favat.ExtKeyThirdPartyRole: "8", // JST subordinate unit
 					}),
 				},
@@ -813,7 +814,7 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "1111111111",
 				Country: l10n.PL.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "1", // Factor
 				}),
 			},
@@ -828,7 +829,7 @@ func TestNewThirdParties(t *testing.T) {
 				{
 					Code:    "3333333333",
 					Country: l10n.PL.ISO(),
-					Ext: tax.ExtensionsOf(tax.ExtMap{
+					Ext: tax.ExtensionsOf(cbc.CodeMap{
 						favat.ExtKeyThirdPartyRole: "10", // VAT group member
 					}),
 				},
@@ -851,7 +852,7 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "1111111111",
 				Country: l10n.PL.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "1",
 				}),
 			},
@@ -868,14 +869,14 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "1111111111",
 				Country: l10n.PL.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "1",
 				}),
 			},
 			{
 				Code:    "2222222222",
 				Country: l10n.PL.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "2",
 				}),
 			},
@@ -896,14 +897,14 @@ func TestNewThirdParties(t *testing.T) {
 				{
 					Code:    "1111111111",
 					Country: l10n.PL.ISO(),
-					Ext: tax.ExtensionsOf(tax.ExtMap{
+					Ext: tax.ExtensionsOf(cbc.CodeMap{
 						favat.ExtKeyThirdPartyRole: "8",
 					}),
 				},
 				{
 					Code:    "2222222222",
 					Country: l10n.PL.ISO(),
-					Ext: tax.ExtensionsOf(tax.ExtMap{
+					Ext: tax.ExtensionsOf(cbc.CodeMap{
 						favat.ExtKeyThirdPartyRole: "10",
 					}),
 				},
@@ -923,7 +924,7 @@ func TestNewThirdParties(t *testing.T) {
 			{
 				Code:    "B12345678",
 				Country: l10n.ES.ISO(),
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyThirdPartyRole: "5",
 				}),
 			},

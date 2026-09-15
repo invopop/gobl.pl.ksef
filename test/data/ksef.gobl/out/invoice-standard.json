@@ -62,7 +62,10 @@
         "item": {
           "name": "Software Development Services",
           "price": "100.00",
-          "unit": "HUR"
+          "unit": "h",
+          "ext": {
+            "untdid-unit": "HUR"
+          }
         },
         "sum": "1000.00",
         "taxes": [
@@ -84,7 +87,10 @@
         "item": {
           "name": "Consulting Services",
           "price": "150.00",
-          "unit": "HUR"
+          "unit": "h",
+          "ext": {
+            "untdid-unit": "HUR"
+          }
         },
         "sum": "750.00",
         "taxes": [

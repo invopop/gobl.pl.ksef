@@ -101,7 +101,7 @@ func TestAdjustRounding(t *testing.T) {
 				},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},
@@ -162,7 +162,7 @@ func TestAdjustRounding(t *testing.T) {
 				},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},
@@ -207,7 +207,7 @@ func TestAdjustRounding(t *testing.T) {
 				},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},
@@ -257,7 +257,7 @@ func TestAdjustRounding(t *testing.T) {
 				},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},
@@ -302,7 +302,7 @@ func TestAdjustRounding(t *testing.T) {
 				},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},
@@ -347,7 +347,7 @@ func TestAdjustRounding(t *testing.T) {
 		// Add advance payment
 		advance, _ := num.AmountFromString("100.00")
 		inv.Payment = &bill.PaymentDetails{
-			Advances: []*pay.Advance{
+			Advances: []*pay.Record{
 				{
 					Amount: advance,
 				},
@@ -364,7 +364,7 @@ func TestAdjustRounding(t *testing.T) {
 		// Now test
 		inv2 := baseInvoice()
 		inv2.Payment = &bill.PaymentDetails{
-			Advances: []*pay.Advance{
+			Advances: []*pay.Record{
 				{
 					Amount: advance,
 				},
@@ -385,7 +385,7 @@ func TestAdjustRounding(t *testing.T) {
 		// Add advance payment
 		advance, _ := num.AmountFromString("100.00")
 		inv.Payment = &bill.PaymentDetails{
-			Advances: []*pay.Advance{
+			Advances: []*pay.Record{
 				{
 					Amount: advance,
 				},
@@ -404,7 +404,7 @@ func TestAdjustRounding(t *testing.T) {
 		inv2.Addons = tax.WithAddons(favat.V3)
 		inv2.Tags = tax.Tags{List: []cbc.Key{favat.TagSettlement}}
 		inv2.Payment = &bill.PaymentDetails{
-			Advances: []*pay.Advance{
+			Advances: []*pay.Record{
 				{
 					Amount: advance,
 				},
@@ -464,7 +464,7 @@ func TestAdjustRounding(t *testing.T) {
 				},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},

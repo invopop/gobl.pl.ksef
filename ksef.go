@@ -50,6 +50,16 @@ func BuildFavat(env *gobl.Envelope) (*Invoice, error) {
 		return nil, fmt.Errorf("invoice does not have the FA_VAT v3 addon")
 	}
 
+	// FA(3) amounts (TKwotowy) carry at most two decimal places, so every
+	// amount has to fit the currency's precision. Documents calculated with
+	// the `precise` rounding rule keep extra decimals on line totals, which
+	// the schema rejects, so recalculate them with the `currency` rule and
+	// carry any change to the amount payable in the totals' rounding.
+	// Documents already within the currency's precision are left untouched.
+	if err := inv.RoundToCurrency(); err != nil {
+		return nil, fmt.Errorf("rounding invoice to currency precision: %w", err)
+	}
+
 	if inv.Type == bill.InvoiceTypeCreditNote {
 		// In KSEF credit notes become corrective invoices,
 		// which require negative totals.

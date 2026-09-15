@@ -25,7 +25,7 @@ func orderingBaseInvoice() *bill.Invoice {
 			},
 		},
 		Tax: &bill.Tax{
-			Ext: tax.ExtensionsOf(tax.ExtMap{
+			Ext: tax.ExtensionsOf(cbc.CodeMap{
 				"pl-favat-invoice-type": "ZAL",
 			}),
 		},
@@ -456,5 +456,42 @@ func TestContractRoundTrip(t *testing.T) {
 		// Orders still survive the round trip
 		require.Len(t, result.TransactionConditions.Orders, 1)
 		assert.Equal(t, "PO-12345", result.TransactionConditions.Orders[0].Number)
+	})
+}
+
+func TestNewInvoicePeriod(t *testing.T) {
+	// OkresFa requires both P_6_Od and P_6_Do, so a one-sided GOBL period —
+	// legal since GOBL v0.505 — cannot be represented.
+	invoiceWithPeriod := func(p *cal.Period) *bill.Invoice {
+		inv := orderingBaseInvoice()
+		inv.Ordering = &bill.Ordering{Period: p}
+		return inv
+	}
+
+	t.Run("maps a complete period", func(t *testing.T) {
+		doc := ksef.NewFavatInv(invoiceWithPeriod(&cal.Period{
+			Start: cal.NewDate(2026, 1, 1),
+			End:   cal.NewDate(2026, 1, 31),
+		}))
+
+		require.NotNil(t, doc.Period)
+		assert.Equal(t, "2026-01-01", doc.Period.StartDate)
+		assert.Equal(t, "2026-01-31", doc.Period.EndDate)
+	})
+
+	t.Run("omits a period missing the end date", func(t *testing.T) {
+		doc := ksef.NewFavatInv(invoiceWithPeriod(&cal.Period{
+			Start: cal.NewDate(2026, 1, 1),
+		}))
+
+		assert.Nil(t, doc.Period)
+	})
+
+	t.Run("omits a period missing the start date", func(t *testing.T) {
+		doc := ksef.NewFavatInv(invoiceWithPeriod(&cal.Period{
+			End: cal.NewDate(2026, 1, 31),
+		}))
+
+		assert.Nil(t, doc.Period)
 	})
 }

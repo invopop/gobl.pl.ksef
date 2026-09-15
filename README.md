@@ -45,7 +45,9 @@ The converter handles the following invoice types and features:
 
 **Other features:**
 - Line item discounts
-- Invoice periods (P_6_Od / P_6_Do)
+- Units of measure (P_8A), see [Units](#units-of-measure-p_8a)
+- Invoice periods (P_6_Od / P_6_Do), emitted only when both dates are known
+- Amounts recalculated to the currency's precision, see [Rounding](#rounding)
 - Correction/credit note references with KSeF numbers
 - Payment details: means of payment, bank accounts, due dates, advance payments
 - Additional description lines (DodatkowyOpis)
@@ -135,6 +137,35 @@ The parsing functionality converts KSeF FA_VAT XML documents back into GOBL form
 - **Settlement invoices**: Derives advance payments for ROZ/KOR_ROZ invoices (see below)
 - **Rounding adjustments**: Handles rounding differences between KSeF and GOBL calculation methods
 - **Round-trip validation**: All GOBL → KSeF conversions are validated through round-trip tests (GOBL → KSeF → GOBL)
+
+## Rounding
+
+FA(3) amounts use the `TKwotowy` type, which allows at most two decimal places.
+GOBL's `precise` rounding rule keeps extra decimals on line totals, so
+`BuildFavat` recalculates every invoice with the `currency` rule
+(`bill.Invoice.RoundToCurrency`) before conversion. Any resulting change to the
+amount payable is carried in the totals' `rounding` amount (BT-114 in EN 16931).
+Invoices already within the currency's precision are left untouched.
+
+In the KSeF → GOBL direction the parsed invoice is likewise given the `currency`
+rounding rule, and `AdjustRounding` reconciles the calculated total against
+`P_15`, since KSeF rounds each line before summing.
+
+## Units of measure (P_8A)
+
+KSeF accepts free-form unit strings, while GOBL takes a defined unit key with
+any UN/ECE Recommendation 20/21 code held in the `untdid-unit` extension. A
+measure read from KSeF is mapped as follows:
+
+| P_8A value | GOBL representation |
+| ---------- | ------------------- |
+| a GOBL unit key (`h`, `kg`, …) | `item.unit` |
+| a UN/ECE code (`HUR`, `KGM`, `SZT`, …) | `item.ext["untdid-unit"]`, plus `item.unit` when the code has a GOBL equivalent |
+| anything else (`szt.`, `kilo`, …) | `item.meta["unit-label"]` |
+
+Going the other way, P_8A is taken from `unit-label` if present, then from the
+`untdid-unit` extension, and finally from the standard mapping of the GOBL unit
+key. Units without a UN/ECE equivalent leave P_8A empty.
 
 ## Settlement Invoices (ROZ)
 

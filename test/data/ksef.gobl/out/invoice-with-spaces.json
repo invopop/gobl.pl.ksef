@@ -57,7 +57,9 @@
         "item": {
           "name": "Usługa abonamentowa Standard",
           "price": "119.50",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "119.50",
         "taxes": [
@@ -79,7 +81,9 @@
         "item": {
           "name": "Usługa abonamentowa Premium",
           "price": "119.50",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "119.50",
         "taxes": [
@@ -101,7 +105,9 @@
         "item": {
           "name": "Usługa dodatkowa Pro",
           "price": "146.00",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "146.00",
         "taxes": [

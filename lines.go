@@ -1,11 +1,14 @@
 package ksef
 
 import (
+	"regexp"
 	"strings"
 
+	"github.com/invopop/gobl/addons/eu/en16931"
 	"github.com/invopop/gobl/addons/pl/favat"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
@@ -18,6 +21,10 @@ import (
 // The "-label" suffix marks it as a free-form human-readable label rather
 // than a canonical unit code.
 const metaKeyUnitLabel cbc.Key = "unit-label"
+
+// regexpUNECEUnit matches the UN/ECE Recommendation 20/21 unit codes accepted
+// by the `untdid-unit` extension.
+var regexpUNECEUnit = regexp.MustCompile(org.UnitPatternUNECE)
 
 // Line defines the XML structure for KSeF item line (element type FaWiersz, for VAT and KOR type invoices)
 type Line struct {
@@ -85,7 +92,7 @@ func newLine(line *bill.Line, pricesIncludeVAT bool) *Line {
 		Discount:   lineDiscount(line),
 	}
 
-	if line.Period != nil {
+	if line.Period != nil && line.Period.End != nil {
 		l.CompletionDate = line.Period.End.String()
 	}
 
@@ -142,13 +149,18 @@ func vatRate(tc *tax.Combo) string {
 
 // lineMeasure resolves the KSeF P_8A unit of measure. When the GOBL item has
 // an Item.Meta["unit-label"] entry — typically set by ToGOBL for KSeF units
-// that do not match a GOBL or UN/ECE code — that original value is used so
-// KSeF round-trips preserve the supplier's wording.
+// that do not match a GOBL unit key or UN/ECE code — that original value is
+// used so KSeF round-trips preserve the supplier's wording. Otherwise the
+// UN/ECE code is taken from the item's `untdid-unit` extension, falling back
+// to the standard mapping of the GOBL unit key.
 func lineMeasure(line *bill.Line) string {
 	if u, ok := line.Item.Meta[metaKeyUnitLabel]; ok && u != "" {
 		return u
 	}
-	return string(line.Item.Unit.UNECE())
+	if code := line.Item.Ext.Get(untdid.ExtKeyUnit); code != cbc.CodeEmpty {
+		return code.String()
+	}
+	return en16931.UnitToUNTDID(line.Item.Unit).String()
 }
 
 func lineDiscount(line *bill.Line) string {
@@ -184,7 +196,8 @@ func (l *Line) ToGOBL() (*bill.Line, error) {
 		if err != nil {
 			return nil, err
 		}
-		line.Period = &cal.Period{Start: d, End: d}
+		end := d
+		line.Period = &cal.Period{Start: &d, End: &end}
 	}
 
 	// Parse quantity
@@ -235,17 +248,25 @@ func (l *Line) ToGOBL() (*bill.Line, error) {
 	}
 
 	// Parse unit of measure. KSeF accepts free-form unit strings (e.g. "kilo",
-	// "pcs."), but GOBL only accepts its own defined unit keys or 2-3 letter
-	// UN/ECE codes. Trim surrounding whitespace before validating so that
-	// user-entered values like " KGM " are still recognized as canonical.
-	// When the measure is not a valid GOBL unit, preserve the trimmed value
-	// under Item.Meta["unit-label"] so the information is not lost while
-	// keeping the resulting invoice valid.
+	// "pcs."), but GOBL only accepts its own defined unit keys, with UN/ECE
+	// codes held in the `untdid-unit` extension. Trim surrounding whitespace
+	// before matching so that user-entered values like " KGM " are still
+	// recognized as canonical. When the measure is neither, preserve the
+	// trimmed value under Item.Meta["unit-label"] so the information is not
+	// lost while keeping the resulting invoice valid.
 	if measure := strings.TrimSpace(l.Measure); measure != "" {
-		unit := org.Unit(measure)
-		if err := unit.Validate(); err == nil {
-			line.Item.Unit = unit
-		} else {
+		switch {
+		case org.HasValidUnitKey.Check(cbc.Key(measure)):
+			line.Item.Unit = cbc.Key(measure)
+		case regexpUNECEUnit.MatchString(measure):
+			// Keep the exact UN/ECE code, and set the equivalent GOBL unit
+			// key when one exists.
+			code := cbc.Code(measure)
+			line.Item.Ext = line.Item.Ext.Merge(tax.ExtensionsOf(cbc.CodeMap{
+				untdid.ExtKeyUnit: code,
+			}))
+			line.Item.Unit = en16931.UnitFromUNTDID(code)
+		default:
 			if line.Item.Meta == nil {
 				line.Item.Meta = cbc.Meta{}
 			}
@@ -284,7 +305,7 @@ func (l *Line) ToGOBL() (*bill.Line, error) {
 			Key:      taxInfo.Key,
 			Rate:     taxInfo.Rate,
 			Percent:  taxInfo.Percent,
-			Ext: tax.ExtensionsOf(tax.ExtMap{
+			Ext: tax.ExtensionsOf(cbc.CodeMap{
 				favat.ExtKeyTaxCategory: taxInfo.TaxCategory,
 			}),
 		}

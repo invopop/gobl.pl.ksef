@@ -85,7 +85,6 @@
         "due_dates": [
           {
             "date": "2026-02-20",
-            "amount": "0",
             "percent": "100%"
           }
         ]

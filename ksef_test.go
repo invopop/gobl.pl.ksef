@@ -3,7 +3,18 @@ package ksef_test
 import (
 	"testing"
 
+	"github.com/invopop/gobl"
+	ksef "github.com/invopop/gobl.ksef"
 	"github.com/invopop/gobl.ksef/test"
+	"github.com/invopop/gobl/addons/pl/favat"
+	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/cbc"
+	"github.com/invopop/gobl/currency"
+	"github.com/invopop/gobl/l10n"
+	"github.com/invopop/gobl/num"
+	"github.com/invopop/gobl/org"
+	"github.com/invopop/gobl/tax"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -135,5 +146,60 @@ func TestBuildFAVAT(t *testing.T) {
 		require.NoError(t, err)
 
 		test.ValidateAgainstFA3Schema(t, data)
+	})
+}
+
+// TestBuildFAVATRounding covers the recalculation to the `currency` rounding
+// rule. FA(3) amounts (TKwotowy) allow at most two decimal places, so line
+// totals carrying the extra precision of the `precise` rule would not pass the
+// schema.
+func TestBuildFAVATRounding(t *testing.T) {
+	// Three units at 3.333 sums to 9.999, which the `precise` rule keeps as
+	// is and the `currency` rule rounds to 10.00.
+	newInvoice := func(rounding cbc.Key) *bill.Invoice {
+		return &bill.Invoice{
+			Addons:    tax.WithAddons(favat.V3),
+			IssueDate: cal.MakeDate(2024, 6, 15),
+			Code:      "TEST-1",
+			Currency:  currency.PLN,
+			Tax:       &bill.Tax{Rounding: rounding},
+			Supplier: &org.Party{
+				Name:  "Supplier",
+				TaxID: &tax.Identity{Country: l10n.PL.Tax(), Code: "9876543210"},
+			},
+			Customer: &org.Party{
+				Name:  "Customer",
+				TaxID: &tax.Identity{Country: l10n.PL.Tax(), Code: "1111111111"},
+			},
+			Lines: []*bill.Line{
+				{
+					Quantity: num.MakeAmount(3, 0),
+					Item:     &org.Item{Name: "Item", Price: num.NewAmount(3333, 3)},
+					Taxes:    tax.Set{{Category: tax.CategoryVAT, Percent: num.NewPercentage(23, 2)}},
+				},
+			},
+		}
+	}
+
+	t.Run("rounds precise line totals to the currency", func(t *testing.T) {
+		env, err := gobl.Envelop(newInvoice(tax.RoundingRulePrecise))
+		require.NoError(t, err)
+
+		doc, err := ksef.BuildFavat(env)
+		require.NoError(t, err)
+
+		require.Len(t, doc.Inv.Lines, 1)
+		assert.Equal(t, "10.00", doc.Inv.Lines[0].NetPriceTotal)
+	})
+
+	t.Run("leaves currency-rounded invoices untouched", func(t *testing.T) {
+		env, err := gobl.Envelop(newInvoice(tax.RoundingRuleCurrency))
+		require.NoError(t, err)
+
+		doc, err := ksef.BuildFavat(env)
+		require.NoError(t, err)
+
+		require.Len(t, doc.Inv.Lines, 1)
+		assert.Equal(t, "10.00", doc.Inv.Lines[0].NetPriceTotal)
 	})
 }

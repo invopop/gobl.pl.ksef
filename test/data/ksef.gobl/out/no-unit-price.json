@@ -62,7 +62,9 @@
         "item": {
           "name": "Connector L-type M5-4",
           "price": "8.6300",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "86.30",
         "taxes": [
@@ -84,7 +86,9 @@
         "item": {
           "name": "Solenoid valve type A",
           "price": "132.8300",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "265.66",
         "taxes": [
@@ -106,7 +110,9 @@
         "item": {
           "name": "Solenoid valve type B",
           "price": "201.1100",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "804.44",
         "taxes": [
@@ -128,7 +134,9 @@
         "item": {
           "name": "Connector L-type G3/8-12",
           "price": "16.3100",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "163.10",
         "taxes": [
@@ -150,7 +158,9 @@
         "item": {
           "name": "Connector L-type G1/4-12",
           "price": "14.5900",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "145.90",
         "taxes": [
@@ -172,7 +182,9 @@
         "item": {
           "name": "Plug B-1/4",
           "price": "3.7100",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "37.10",
         "taxes": [
@@ -194,7 +206,9 @@
         "item": {
           "name": "Plug B-3/8",
           "price": "5.2500",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "52.50",
         "taxes": [
@@ -216,7 +230,9 @@
         "item": {
           "name": "Push-in connector G1/8-4",
           "price": "5.0300",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "50.30",
         "taxes": [
@@ -238,7 +254,9 @@
         "item": {
           "name": "Push-in connector M5-4-I",
           "price": "5.7600",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "172.80",
         "taxes": [
@@ -260,7 +278,9 @@
         "item": {
           "name": "Push-in connector G3/8-12",
           "price": "10.7500",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "107.50",
         "taxes": [
@@ -282,7 +302,9 @@
         "item": {
           "name": "Push-in connector G1/4-12",
           "price": "9.6300",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "96.30",
         "taxes": [
@@ -328,7 +350,9 @@
         "item": {
           "name": "Plug B-M5",
           "price": "3.0700",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "30.70",
         "taxes": [
@@ -350,7 +374,9 @@
         "item": {
           "name": "Noise silencer M-H-M5",
           "price": "3.5900",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "71.80",
         "taxes": [
@@ -516,7 +542,9 @@
         "item": {
           "name": "Connector L-type M5-4",
           "price": "8.6300",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "86.30",
         "taxes": [
