@@ -183,13 +183,18 @@ measure read from KSeF is mapped as follows:
 | P_8A value | GOBL representation |
 | ---------- | ------------------- |
 | a GOBL unit key (`h`, `kg`, …) | `item.unit` |
-| a UN/ECE code (`HUR`, `KGM`, `SZT`, …) | `item.ext["untdid-unit"]`, plus `item.unit` when the code has a GOBL equivalent |
+| a UN/ECE code GOBL has a unit for (`HUR`, `KGM`, …) | `item.unit` |
+| a UN/ECE-shaped code it does not (`SZT`, `D61`, …) | `item.ext["untdid-unit"]` |
 | anything else (`szt.`, `kilo`, …) | `item.meta["unit-label"]` |
 
+The code is not stored alongside a unit that already implies it, matching how
+GOBL normalizes units elsewhere.
+
 Going the other way, P_8A is taken from `unit-label` if present, then from the
-`untdid-unit` extension, and finally from the standard mapping of the GOBL unit
-key. Every unit GOBL defines has an exact UNTDID equivalent, so only an item
-without a unit at all leaves P_8A empty.
+unit, and finally from the `untdid-unit` extension. The unit takes priority, as
+it does throughout GOBL: every unit it defines has an exact UNTDID code, so the
+extension only decides for an item with no unit. An item with neither leaves
+P_8A empty.
 
 ## Settlement Invoices (ROZ)
 

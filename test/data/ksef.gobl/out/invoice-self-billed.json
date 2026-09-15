@@ -61,10 +61,7 @@
         "item": {
           "name": "Agricultural Products",
           "price": "50.00",
-          "unit": "kg",
-          "ext": {
-            "untdid-unit": "KGM"
-          }
+          "unit": "kg"
         },
         "sum": "5000.00",
         "taxes": [

@@ -62,10 +62,7 @@
         "item": {
           "name": "Office Paper Shredder Model X",
           "price": "309.9900",
-          "unit": "h",
-          "ext": {
-            "untdid-unit": "HUR"
-          }
+          "unit": "h"
         },
         "sum": "309.99",
         "taxes": [
@@ -91,10 +88,7 @@
         "item": {
           "name": "SMS Notification Service",
           "price": "0.9900",
-          "unit": "h",
-          "ext": {
-            "untdid-unit": "HUR"
-          }
+          "unit": "h"
         },
         "sum": "0.99",
         "taxes": [
@@ -120,10 +114,7 @@
         "item": {
           "name": "Next Business Day Courier Delivery",
           "price": "10.9900",
-          "unit": "h",
-          "ext": {
-            "untdid-unit": "HUR"
-          }
+          "unit": "h"
         },
         "sum": "10.99",
         "taxes": [

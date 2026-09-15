@@ -149,19 +149,20 @@ func vatRate(tc *tax.Combo) string {
 // lineMeasure resolves the KSeF P_8A unit of measure. When the GOBL item has
 // an Item.Meta["unit-label"] entry — typically set by ToGOBL for KSeF units
 // that do not match a GOBL unit key or UN/ECE code — that original value is
-// used so KSeF round-trips preserve the supplier's wording. Otherwise the
-// UN/ECE code is taken from the item's `untdid-unit` extension, falling back
-// to the standard mapping of the GOBL unit key. Every unit GOBL defines has
-// an exact UNTDID equivalent, so only an item without a unit at all leaves
-// P_8A empty.
+// used so KSeF round-trips preserve the supplier's wording.
+//
+// Otherwise the item's unit decides, as it does everywhere in GOBL: every unit
+// it defines has an exact UNTDID code, so the `untdid-unit` extension is only
+// consulted for an item with no unit, which is how a code GOBL has no key for
+// is carried. An item with neither leaves P_8A empty.
 func lineMeasure(line *bill.Line) string {
 	if u, ok := line.Item.Meta[metaKeyUnitLabel]; ok && u != "" {
 		return u
 	}
-	if code := line.Item.Ext.Get(untdid.ExtKeyUnit); code != cbc.CodeEmpty {
+	if code := untdid.UnitCode(line.Item.Unit); code != cbc.CodeEmpty {
 		return code.String()
 	}
-	return untdid.UnitCode(line.Item.Unit).String()
+	return line.Item.Ext.Get(untdid.ExtKeyUnit).String()
 }
 
 func lineDiscount(line *bill.Line) string {
@@ -260,13 +261,17 @@ func (l *Line) ToGOBL() (*bill.Line, error) {
 		case org.HasValidUnitKey.Check(cbc.Key(measure)):
 			line.Item.Unit = cbc.Key(measure)
 		case regexpUNECEUnit.MatchString(measure):
-			// Keep the exact UN/ECE code, and set the equivalent GOBL unit
-			// key when one exists.
+			// A code GOBL has a unit for is held as that unit, which implies
+			// the code again on the way back out. Only a code with no
+			// equivalent needs the extension to carry it.
 			code := cbc.Code(measure)
-			line.Item.Ext = line.Item.Ext.Merge(tax.ExtensionsOf(cbc.CodeMap{
-				untdid.ExtKeyUnit: code,
-			}))
-			line.Item.Unit = untdid.UnitKey(code)
+			if unit := untdid.UnitKey(code); unit != cbc.KeyEmpty {
+				line.Item.Unit = unit
+			} else {
+				line.Item.Ext = line.Item.Ext.Merge(tax.ExtensionsOf(cbc.CodeMap{
+					untdid.ExtKeyUnit: code,
+				}))
+			}
 		default:
 			if line.Item.Meta == nil {
 				line.Item.Meta = cbc.Meta{}
