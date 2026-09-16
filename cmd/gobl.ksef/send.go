@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/invopop/gobl"
-	ksef "github.com/invopop/gobl.ksef"
-	ksef_api "github.com/invopop/gobl.ksef/api"
+	ksef "github.com/invopop/gobl.pl.ksef"
+	ksef_api "github.com/invopop/gobl.pl.ksef/api"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/xmldsig"
 	"github.com/spf13/cobra"

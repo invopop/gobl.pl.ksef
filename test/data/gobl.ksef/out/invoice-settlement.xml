@@ -53,13 +53,13 @@
       </PMarzy>
     </Adnotacje>
     <RodzajFaktury>ROZ</RodzajFaktury>
-    <FakturaZaliczkowa>
-      <NrKSeFFaZaliczkowej>9876543210-20260115-ABC123DEF456-01</NrKSeFFaZaliczkowej>
-    </FakturaZaliczkowa>
     <DodatkowyOpis>
       <Klucz>general</Klucz>
       <Wartosc>This is a settlement invoice that finalizes the transaction including all previous advance payments.</Wartosc>
     </DodatkowyOpis>
+    <FakturaZaliczkowa>
+      <NrKSeFFaZaliczkowej>9876543210-20260115-ABC123DEF456-01</NrKSeFFaZaliczkowej>
+    </FakturaZaliczkowa>
     <FaWiersz>
       <NrWierszaFa>1</NrWierszaFa>
       <P_7>Project Completion - Final Invoice</P_7>

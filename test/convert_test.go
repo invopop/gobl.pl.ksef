@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/invopop/gobl"
-	ksef "github.com/invopop/gobl.ksef"
+	ksef "github.com/invopop/gobl.pl.ksef"
 	"github.com/invopop/xmldsig"
 	dsigksef "github.com/invopop/xmldsig/ksef"
 	"github.com/stretchr/testify/assert"

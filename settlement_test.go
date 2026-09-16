@@ -4,9 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	ksef "github.com/invopop/gobl.ksef"
-	"github.com/invopop/gobl/addons/pl/favat"
+	ksef "github.com/invopop/gobl.pl.ksef"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
+	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
 	"github.com/invopop/gobl/l10n"
 	"github.com/invopop/gobl/num"
@@ -22,7 +23,7 @@ func TestSettlementOutbound(t *testing.T) {
 			Currency: currency.PLN,
 			Supplier: &org.Party{TaxID: &tax.Identity{Country: l10n.PL.Tax()}},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{favat.ExtKeyInvoiceType: "VAT"}),
+				Ext: tax.ExtensionsOf(cbc.CodeMap{favat.ExtKeyInvoiceType: "VAT"}),
 			},
 			Totals: &bill.Totals{Taxes: &tax.Total{}},
 		}

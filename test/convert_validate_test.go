@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	ksef "github.com/invopop/gobl.ksef"
+	ksef "github.com/invopop/gobl.pl.ksef"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,15 +20,17 @@ import (
 //
 //	go test -tags xsdvalidate ./test -run TestConvertAndValidateAll -v
 func TestConvertAndValidateAll(t *testing.T) {
-	dataPath := GetDataPath()
+	dataPath := GetGOBLPath()
 
 	entries, err := os.ReadDir(dataPath)
 	require.NoError(t, err)
 
+	var found int
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
+		found++
 
 		name := entry.Name()
 		t.Run(name, func(t *testing.T) {
@@ -48,4 +50,8 @@ func TestConvertAndValidateAll(t *testing.T) {
 			ValidateAgainstFA3Schema(t, data)
 		})
 	}
+
+	// Guard against the whole suite silently passing because the directory
+	// layout moved and nothing was picked up.
+	require.NotZero(t, found, "no GOBL documents found in %s", dataPath)
 }

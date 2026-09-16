@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/invopop/gobl"
-	ksef "github.com/invopop/gobl.ksef"
+	ksef "github.com/invopop/gobl.pl.ksef"
 	"github.com/invopop/gobl/bill"
 )
 
@@ -139,6 +139,12 @@ func loadAndEnvelope(name string) (*gobl.Envelope, error) {
 // GetSchemaPath returns the path to the `test/data/schema` folder
 func GetSchemaPath() string {
 	return filepath.Join(GetDataPath(), "schema")
+}
+
+// GetGOBLPath returns the path to the `test/data/gobl.ksef` folder, which
+// holds the GOBL documents used as input for conversion to KSeF.
+func GetGOBLPath() string {
+	return filepath.Join(GetDataPath(), "gobl.ksef")
 }
 
 // GetOutPath returns the path to the `test/data/gobl.ksef/out` folder

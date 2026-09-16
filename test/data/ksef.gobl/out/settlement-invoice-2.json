@@ -65,7 +65,9 @@
         "item": {
           "name": "Robot przemysłowy Model X + transport",
           "price": "55580.00",
-          "unit": "SZT"
+          "ext": {
+            "untdid-unit": "SZT"
+          }
         },
         "sum": "55580.00",
         "taxes": [
@@ -82,16 +84,16 @@
         "total": "55580.00",
         "notes": [
           {
-            "text": "(PL) Nr zamówienia sprzedaży/poz,:: 0000100001 / 000010\n"
+            "text": "(PL) Nr zamówienia sprzedaży/poz,:: 0000100001 / 000010"
           },
           {
-            "text": "(PL) Nr zamówienia sprzedaży/poz,:: 0000100002 / 000010\n"
+            "text": "(PL) Nr zamówienia sprzedaży/poz,:: 0000100002 / 000010"
           },
           {
-            "text": "(PL) PKWIU:: 28.22.18.0\n"
+            "text": "(PL) PKWIU:: 28.22.18.0"
           },
           {
-            "text": "(PL) Tekst sprzedaży materiału: Oferta produktowa nr OF/2026/001\n"
+            "text": "(PL) Tekst sprzedaży materiału: Oferta produktowa nr OF/2026/001"
           },
           {
             "text": "Materiał: 10001"

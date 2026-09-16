@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	ksef "github.com/invopop/gobl.ksef"
-	"github.com/invopop/gobl/addons/pl/favat"
+	ksef "github.com/invopop/gobl.pl.ksef"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
@@ -29,7 +29,7 @@ func TestNewFavatInv(t *testing.T) {
 				},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},
@@ -69,7 +69,7 @@ func TestNewFavatInv(t *testing.T) {
 		inv := baseInvoice()
 		inv.Preceding = []*org.DocumentRef{
 			{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyEffectiveDate: "1",
 				}),
 			},
@@ -1280,7 +1280,7 @@ func TestNewFavatInvLineNotes(t *testing.T) {
 				TaxID: &tax.Identity{Country: l10n.PL.Tax()},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},
@@ -1297,7 +1297,7 @@ func TestNewFavatInvLineNotes(t *testing.T) {
 						{
 							Category: tax.CategoryVAT,
 							Percent:  &pct23,
-							Ext:      tax.ExtensionsOf(tax.ExtMap{favat.ExtKeyTaxCategory: "1"}),
+							Ext:      tax.ExtensionsOf(cbc.CodeMap{favat.ExtKeyTaxCategory: "1"}),
 						},
 					},
 				},
@@ -1664,7 +1664,7 @@ func TestAdjustSettlementTotals(t *testing.T) {
 				TaxID: &tax.Identity{Country: l10n.PL.Tax()},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "ROZ",
 				}),
 			},
@@ -1681,13 +1681,13 @@ func TestAdjustSettlementTotals(t *testing.T) {
 						{
 							Category: tax.CategoryVAT,
 							Percent:  &pct23,
-							Ext:      tax.ExtensionsOf(tax.ExtMap{favat.ExtKeyTaxCategory: "1"}),
+							Ext:      tax.ExtensionsOf(cbc.CodeMap{favat.ExtKeyTaxCategory: "1"}),
 						},
 					},
 				},
 			},
 			Payment: &bill.PaymentDetails{
-				Advances: []*pay.Advance{
+				Advances: []*pay.Record{
 					{
 						Date:        &advDate,
 						Ref:         "1234567890-20260101-AAA000BBB111-01",
@@ -1709,7 +1709,7 @@ func TestAdjustSettlementTotals(t *testing.T) {
 									Base:    num.MakeAmount(1000000, 2),
 									Percent: &pct23,
 									Amount:  num.MakeAmount(230000, 2),
-									Ext:     tax.ExtensionsOf(tax.ExtMap{favat.ExtKeyTaxCategory: "1"}),
+									Ext:     tax.ExtensionsOf(cbc.CodeMap{favat.ExtKeyTaxCategory: "1"}),
 								},
 							},
 							Amount: num.MakeAmount(230000, 2),
@@ -1845,7 +1845,7 @@ func TestForeignCurrencyExchangeRate(t *testing.T) {
 				TaxID: &tax.Identity{Country: l10n.PL.Tax()},
 			},
 			Tax: &bill.Tax{
-				Ext: tax.ExtensionsOf(tax.ExtMap{
+				Ext: tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyInvoiceType: "VAT",
 				}),
 			},
@@ -1868,14 +1868,14 @@ func TestForeignCurrencyExchangeRate(t *testing.T) {
 									Base:    num.MakeAmount(100000, 2),
 									Percent: &pct23,
 									Amount:  num.MakeAmount(23000, 2),
-									Ext:     tax.ExtensionsOf(tax.ExtMap{favat.ExtKeyTaxCategory: "1"}),
+									Ext:     tax.ExtensionsOf(cbc.CodeMap{favat.ExtKeyTaxCategory: "1"}),
 								},
 								{
 									Key:     tax.KeyStandard,
 									Base:    num.MakeAmount(75000, 2),
 									Percent: &pct8,
 									Amount:  num.MakeAmount(6000, 2),
-									Ext:     tax.ExtensionsOf(tax.ExtMap{favat.ExtKeyTaxCategory: "2"}),
+									Ext:     tax.ExtensionsOf(cbc.CodeMap{favat.ExtKeyTaxCategory: "2"}),
 								},
 							},
 						},
@@ -1938,7 +1938,7 @@ func TestForeignCurrencyExchangeRate(t *testing.T) {
 				Key:    tax.KeyStandard,
 				Base:   num.MakeAmount(100000, 2),
 				Amount: num.MakeAmount(21000, 2),
-				Ext:    tax.ExtensionsOf(tax.ExtMap{favat.ExtKeyTaxCategory: "5"}),
+				Ext:    tax.ExtensionsOf(cbc.CodeMap{favat.ExtKeyTaxCategory: "5"}),
 			},
 		}
 
@@ -2132,7 +2132,7 @@ func TestNoteCodeAsKey(t *testing.T) {
 			TaxID: &tax.Identity{Country: l10n.PL.Tax()},
 		},
 		Tax: &bill.Tax{
-			Ext: tax.ExtensionsOf(tax.ExtMap{favat.ExtKeyInvoiceType: "VAT"}),
+			Ext: tax.ExtensionsOf(cbc.CodeMap{favat.ExtKeyInvoiceType: "VAT"}),
 		},
 		Totals: &bill.Totals{Taxes: &tax.Total{}},
 		Notes: []*org.Note{

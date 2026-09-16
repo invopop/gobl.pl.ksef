@@ -57,7 +57,9 @@
         "item": {
           "name": "Opłata serwisowa A",
           "price": "782.02",
-          "unit": "PLN"
+          "ext": {
+            "untdid-unit": "PLN"
+          }
         },
         "sum": "782.02",
         "taxes": [
@@ -79,7 +81,9 @@
         "item": {
           "name": "Czynsz A",
           "price": "2592.48",
-          "unit": "PLN"
+          "ext": {
+            "untdid-unit": "PLN"
+          }
         },
         "sum": "2592.48",
         "taxes": [
@@ -101,7 +105,9 @@
         "item": {
           "name": "Opłata serwisowa B",
           "price": "677.79",
-          "unit": "PLN"
+          "ext": {
+            "untdid-unit": "PLN"
+          }
         },
         "sum": "677.79",
         "taxes": [
@@ -123,7 +129,9 @@
         "item": {
           "name": "Czynsz B",
           "price": "822.21",
-          "unit": "PLN"
+          "ext": {
+            "untdid-unit": "PLN"
+          }
         },
         "sum": "822.21",
         "taxes": [

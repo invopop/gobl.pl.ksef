@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/invopop/gobl"
-	ksef "github.com/invopop/gobl.ksef"
+	ksef "github.com/invopop/gobl.pl.ksef"
 	"github.com/spf13/cobra"
 )
 

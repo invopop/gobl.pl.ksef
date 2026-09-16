@@ -982,7 +982,7 @@
                 "ext": {
                   "pl-favat-tax-category": "3"
                 },
-                "base": "853.98",
+                "base": "853.96",
                 "percent": "5.0%",
                 "amount": "42.70"
               },
@@ -991,7 +991,7 @@
                 "ext": {
                   "pl-favat-tax-category": "2"
                 },
-                "base": "43.86",
+                "base": "43.85",
                 "percent": "8.0%",
                 "amount": "3.51"
               }

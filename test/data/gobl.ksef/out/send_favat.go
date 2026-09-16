@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	ksef_api "github.com/invopop/gobl.ksef/api"
+	ksef_api "github.com/invopop/gobl.pl.ksef/api"
 	"github.com/invopop/xmldsig"
 )
 

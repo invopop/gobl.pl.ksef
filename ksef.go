@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/invopop/gobl"
-	"github.com/invopop/gobl/addons/pl/favat"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/currency"
@@ -39,6 +39,10 @@ type Invoice struct {
 	Footer       *Stopka       `xml:"Stopka,omitempty"`
 }
 
+// favatMaxSubunits is the number of decimal places the FA(3) TKwotowy type
+// allows on every monetary amount, regardless of the document's currency.
+const favatMaxSubunits uint32 = 2
+
 // BuildFavat converts a GOBL envelope into a KSeF FA_VAT invoice document.
 func BuildFavat(env *gobl.Envelope) (*Invoice, error) {
 	inv, ok := env.Extract().(*bill.Invoice)
@@ -48,6 +52,26 @@ func BuildFavat(env *gobl.Envelope) (*Invoice, error) {
 
 	if !favat.V3.In(inv.GetAddons()...) {
 		return nil, fmt.Errorf("invoice does not have the FA_VAT v3 addon")
+	}
+
+	// FA(3) fixes every amount (TKwotowy) at two decimal places, whatever the
+	// currency, so a currency with finer subunits cannot be represented even
+	// after rounding to its own precision. Report that rather than emit XML
+	// the schema rejects.
+	if cd := inv.Currency.Def(); cd != nil && cd.Subunits > favatMaxSubunits {
+		return nil, fmt.Errorf(
+			"currency %s has %d decimal places, more than the %d FA(3) allows",
+			inv.Currency, cd.Subunits, favatMaxSubunits,
+		)
+	}
+
+	// Documents calculated with the `precise` rounding rule keep extra
+	// decimals on line totals, which the schema rejects, so recalculate them
+	// with the `currency` rule and carry any change to the amount payable in
+	// the totals' rounding. Documents already within the currency's precision
+	// are left untouched.
+	if err := inv.RoundToCurrency(); err != nil {
+		return nil, fmt.Errorf("rounding invoice to currency precision: %w", err)
 	}
 
 	if inv.Type == bill.InvoiceTypeCreditNote {

@@ -55,10 +55,14 @@
       {
         "i": 1,
         "quantity": "1.0000",
+        "period": {
+          "start": "2024-06-15",
+          "end": "2024-06-15"
+        },
         "item": {
           "name": "Office Paper Shredder Model X",
           "price": "309.9900",
-          "unit": "HUR"
+          "unit": "h"
         },
         "sum": "309.99",
         "taxes": [
@@ -77,10 +81,14 @@
       {
         "i": 2,
         "quantity": "1.0000",
+        "period": {
+          "start": "2024-06-15",
+          "end": "2024-06-15"
+        },
         "item": {
           "name": "SMS Notification Service",
           "price": "0.9900",
-          "unit": "HUR"
+          "unit": "h"
         },
         "sum": "0.99",
         "taxes": [
@@ -99,10 +107,14 @@
       {
         "i": 3,
         "quantity": "1.0000",
+        "period": {
+          "start": "2024-06-15",
+          "end": "2024-06-15"
+        },
         "item": {
           "name": "Next Business Day Courier Delivery",
           "price": "10.9900",
-          "unit": "HUR"
+          "unit": "h"
         },
         "sum": "10.99",
         "taxes": [
@@ -140,8 +152,8 @@
     },
     "totals": {
       "sum": "321.97",
-      "tax_included": "60.20",
-      "total": "261.77",
+      "tax_included": "60.21",
+      "total": "261.76",
       "taxes": {
         "categories": [
           {
@@ -154,15 +166,15 @@
                 },
                 "base": "261.76",
                 "percent": "23.0%",
-                "amount": "60.20"
+                "amount": "60.21"
               }
             ],
-            "amount": "60.20"
+            "amount": "60.21"
           }
         ],
-        "sum": "60.20"
+        "sum": "60.21"
       },
-      "tax": "60.20",
+      "tax": "60.21",
       "total_with_tax": "321.97",
       "payable": "321.97",
       "advance": "321.97",

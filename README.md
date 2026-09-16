@@ -1,6 +1,29 @@
-# GOBL ↔ KSeF Conversion
+# 🇵🇱 GOBL Poland KSeF
 
-Bidirectional conversion between GOBL and the Polish FA_VAT XML format (KSeF).
+The Polish KSeF module for GOBL: the `pl-favat-v3` addon and bidirectional
+conversion between GOBL and the FA_VAT XML format.
+
+The module is laid out in two parts:
+
+- [`addon/`](addon) — the `pl-favat-v3` GOBL addon (extensions, scenarios,
+  normalization and validation rules). See its [README](addon/README.md).
+- the root package — the FA_VAT XML converter and the KSeF API client, built
+  on top of the addon.
+
+## Installation
+
+```bash
+go get github.com/invopop/gobl.pl.ksef
+```
+
+The addon registers itself on import. Consumers that only need GOBL documents
+declaring `pl-favat-v3` to normalize and validate can blank-import it:
+
+```go
+import _ "github.com/invopop/gobl.pl.ksef/addon"
+```
+
+Importing the root converter package pulls the addon in automatically.
 
 ## Main Conversion Entrypoints
 
@@ -45,7 +68,9 @@ The converter handles the following invoice types and features:
 
 **Other features:**
 - Line item discounts
-- Invoice periods (P_6_Od / P_6_Do)
+- Units of measure (P_8A), see [Units](#units-of-measure-p_8a)
+- Invoice periods (P_6_Od / P_6_Do), emitted only when both dates are known
+- Amounts recalculated to the currency's precision, see [Rounding](#rounding)
 - Correction/credit note references with KSeF numbers
 - Payment details: means of payment, bank accounts, due dates, advance payments
 - Additional description lines (DodatkowyOpis)
@@ -135,6 +160,47 @@ The parsing functionality converts KSeF FA_VAT XML documents back into GOBL form
 - **Settlement invoices**: Derives advance payments for ROZ/KOR_ROZ invoices (see below)
 - **Rounding adjustments**: Handles rounding differences between KSeF and GOBL calculation methods
 - **Round-trip validation**: All GOBL → KSeF conversions are validated through round-trip tests (GOBL → KSeF → GOBL)
+
+## Rounding
+
+FA(3) amounts use the `TKwotowy` type, which allows at most two decimal places.
+GOBL's `precise` rounding rule keeps extra decimals on line totals, so
+`BuildFavat` recalculates every invoice with the `currency` rule
+(`bill.Invoice.RoundToCurrency`) before conversion. Any resulting change to the
+amount payable is carried in the totals' `rounding` amount (BT-114 in EN 16931).
+Invoices already within the currency's precision are left untouched.
+
+In the KSeF → GOBL direction the parsed invoice is likewise given the `currency`
+rounding rule, and `AdjustRounding` reconciles the calculated total against
+`P_15`, since KSeF rounds each line before summing.
+
+`TKwotowy` is fixed at two decimal places whatever the currency, so the ten
+FA(3) currencies with finer subunits — BHD, KWD, OMR and the like — cannot be
+represented at all. `BuildFavat` reports those rather than emit XML the schema
+would reject. Currencies with fewer decimals, such as JPY, are fine: the
+fractional part is optional.
+
+## Units of measure (P_8A)
+
+KSeF accepts free-form unit strings, while GOBL takes a defined unit key with
+any UN/ECE Recommendation 20/21 code held in the `untdid-unit` extension. A
+measure read from KSeF is mapped as follows:
+
+| P_8A value | GOBL representation |
+| ---------- | ------------------- |
+| a GOBL unit key (`h`, `kg`, …) | `item.unit` |
+| a UN/ECE code GOBL has a unit for (`HUR`, `KGM`, …) | `item.unit` |
+| a UN/ECE-shaped code it does not (`SZT`, `D61`, …) | `item.ext["untdid-unit"]` |
+| anything else (`szt.`, `kilo`, …) | `item.meta["unit-label"]` |
+
+The code is not stored alongside a unit that already implies it, matching how
+GOBL normalizes units elsewhere.
+
+Going the other way, P_8A is taken from `unit-label` if present, then from the
+unit, and finally from the `untdid-unit` extension. The unit takes priority, as
+it does throughout GOBL: every unit it defines has an exact UNTDID code, so the
+extension only decides for an item with no unit. An item with neither leaves
+P_8A empty.
 
 ## Settlement Invoices (ROZ)
 

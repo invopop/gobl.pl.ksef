@@ -3,10 +3,11 @@ package ksef_test
 import (
 	"testing"
 
-	ksef "github.com/invopop/gobl.ksef"
-	"github.com/invopop/gobl/addons/pl/favat"
+	ksef "github.com/invopop/gobl.pl.ksef"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
+	"github.com/invopop/gobl/catalogues/untdid"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
 	"github.com/invopop/gobl/org"
@@ -50,6 +51,116 @@ func TestNewLines(t *testing.T) {
 		assert.Equal(t, "2", result[0].Quantity)
 		assert.Equal(t, "200.00", result[0].NetPriceTotal)
 		assert.Equal(t, "23", result[0].VATRate)
+	})
+
+	t.Run("takes the measure from the untdid-unit extension", func(t *testing.T) {
+		price, _ := num.AmountFromString("100.00")
+		qty, _ := num.AmountFromString("1")
+		total, _ := num.AmountFromString("100.00")
+
+		lines := []*bill.Line{
+			{
+				Index:    1,
+				Quantity: qty,
+				Item: &org.Item{
+					Name:  "Item with a non-standard UN/ECE code",
+					Price: &price,
+					Ext: tax.ExtensionsOf(cbc.CodeMap{
+						untdid.ExtKeyUnit: "SZT",
+					}),
+				},
+				Total: &total,
+				Taxes: tax.Set{&tax.Combo{Category: tax.CategoryVAT, Percent: num.NewPercentage(23, 2)}},
+			},
+		}
+
+		result := ksef.NewLines(lines)
+
+		require.Len(t, result, 1)
+		assert.Equal(t, "SZT", result[0].Measure)
+	})
+
+	t.Run("prefers the unit key over the untdid-unit extension", func(t *testing.T) {
+		price, _ := num.AmountFromString("100.00")
+		qty, _ := num.AmountFromString("1")
+		total, _ := num.AmountFromString("100.00")
+
+		lines := []*bill.Line{
+			{
+				Index:    1,
+				Quantity: qty,
+				Item: &org.Item{
+					Name:  "Item",
+					Price: &price,
+					Unit:  org.UnitPiece,
+					Ext: tax.ExtensionsOf(cbc.CodeMap{
+						untdid.ExtKeyUnit: "SZT",
+					}),
+				},
+				Total: &total,
+				Taxes: tax.Set{&tax.Combo{Category: tax.CategoryVAT, Percent: num.NewPercentage(23, 2)}},
+			},
+		}
+
+		result := ksef.NewLines(lines)
+
+		require.Len(t, result, 1)
+		// GOBL resolves a conflict in favour of the unit, and normalization
+		// realigns the extension to match it, so P_8A follows the unit.
+		assert.Equal(t, "H87", result[0].Measure)
+	})
+
+	t.Run("maps every GOBL unit key to a measure", func(t *testing.T) {
+		// Since GOBL v0.506.1 every defined unit has an exact UNTDID
+		// equivalent, so a line carrying a unit always yields a P_8A.
+		price, _ := num.AmountFromString("100.00")
+		qty, _ := num.AmountFromString("1")
+		total, _ := num.AmountFromString("100.00")
+
+		for _, def := range org.UnitDefinitions {
+			lines := []*bill.Line{
+				{
+					Index:    1,
+					Quantity: qty,
+					Item: &org.Item{
+						Name:  "Item",
+						Price: &price,
+						Unit:  def.Key,
+					},
+					Total: &total,
+					Taxes: tax.Set{&tax.Combo{Category: tax.CategoryVAT, Percent: num.NewPercentage(23, 2)}},
+				},
+			}
+
+			result := ksef.NewLines(lines)
+
+			require.Len(t, result, 1)
+			assert.NotEmpty(t, result[0].Measure, "unit %s has no UN/ECE code", def.Key)
+		}
+	})
+
+	t.Run("leaves the measure empty when the item has no unit", func(t *testing.T) {
+		price, _ := num.AmountFromString("100.00")
+		qty, _ := num.AmountFromString("1")
+		total, _ := num.AmountFromString("100.00")
+
+		lines := []*bill.Line{
+			{
+				Index:    1,
+				Quantity: qty,
+				Item: &org.Item{
+					Name:  "Item",
+					Price: &price,
+				},
+				Total: &total,
+				Taxes: tax.Set{&tax.Combo{Category: tax.CategoryVAT, Percent: num.NewPercentage(23, 2)}},
+			},
+		}
+
+		result := ksef.NewLines(lines)
+
+		require.Len(t, result, 1)
+		assert.Empty(t, result[0].Measure)
 	})
 
 	t.Run("handles multiple lines", func(t *testing.T) {
@@ -282,8 +393,8 @@ func TestNewLines(t *testing.T) {
 				Index:    1,
 				Quantity: qty,
 				Period: &cal.Period{
-					Start: cal.MakeDate(2026, 4, 8),
-					End:   cal.MakeDate(2026, 4, 8),
+					Start: cal.NewDate(2026, 4, 8),
+					End:   cal.NewDate(2026, 4, 8),
 				},
 				Item:  &org.Item{Name: "Room night", Price: &price, Unit: "one"},
 				Total: &total,
@@ -296,6 +407,45 @@ func TestNewLines(t *testing.T) {
 		require.Len(t, result, 1)
 		assert.Equal(t, "2026-04-08", result[0].CompletionDate)
 	})
+}
+
+// TestLineMeasureRoundTrip checks that a KSeF unit of measure survives the
+// trip through GOBL and back, whichever of the three representations holds it:
+// a unit key, the untdid-unit extension, or the unit-label meta.
+func TestLineMeasureRoundTrip(t *testing.T) {
+	price, _ := num.AmountFromString("100.00")
+	total, _ := num.AmountFromString("100.00")
+
+	for _, measure := range []string{
+		"HUR",  // maps to a GOBL unit
+		"KGM",  // maps to a GOBL unit
+		"H87",  // maps to a GOBL unit
+		"13",   // maps to portion, and is numeric
+		"SZT",  // UN/ECE-shaped, no GOBL unit
+		"D61",  // a real UNTDID code with no GOBL unit
+		"PLN",  // not a unit at all, but shaped like one
+		"szt.", // free-form
+		"kilo", // free-form
+	} {
+		t.Run(measure, func(t *testing.T) {
+			line, err := (&ksef.Line{
+				Name:         "Item",
+				Quantity:     "1",
+				NetUnitPrice: "100.00",
+				Measure:      measure,
+				VATRate:      "23",
+			}).ToGOBL()
+			require.NoError(t, err)
+
+			line.Index = 1
+			line.Item.Price = &price
+			line.Total = &total
+
+			result := ksef.NewLines([]*bill.Line{line})
+			require.Len(t, result, 1)
+			assert.Equal(t, measure, result[0].Measure)
+		})
+	}
 }
 
 func TestLineToGOBL(t *testing.T) {
@@ -315,7 +465,9 @@ func TestLineToGOBL(t *testing.T) {
 		assert.Equal(t, "Test Item", line.Item.Name)
 		assert.Equal(t, "2", line.Quantity.String())
 		assert.Equal(t, "100.00", line.Item.Price.String())
-		assert.Equal(t, org.Unit("HUR"), line.Item.Unit)
+		assert.Equal(t, org.UnitHour, line.Item.Unit)
+		// The unit implies the code, so it is not duplicated in the extension.
+		assert.Empty(t, line.Item.Ext.Get(untdid.ExtKeyUnit))
 		assert.Len(t, line.Taxes, 1)
 		assert.Equal(t, tax.CategoryVAT, line.Taxes[0].Category)
 		assert.Equal(t, "23", line.Taxes[0].Percent.Amount().MinimalString())
@@ -569,7 +721,28 @@ func TestLineToGOBL(t *testing.T) {
 		line, err := ksefLine.ToGOBL()
 
 		require.NoError(t, err)
-		assert.Equal(t, org.Unit("KGM"), line.Item.Unit)
+		// A code GOBL has a unit for becomes that unit, which implies the
+		// same code again on the way back out.
+		assert.Equal(t, org.UnitKilogram, line.Item.Unit)
+		assert.Empty(t, line.Item.Ext.Get(untdid.ExtKeyUnit))
+		assert.Empty(t, line.Item.Meta["unit-label"])
+	})
+
+	t.Run("keeps unmapped UNECE unit codes in the extension", func(t *testing.T) {
+		ksefLine := &ksef.Line{
+			Name:         "Item with unmapped UNECE unit",
+			Quantity:     "1",
+			NetUnitPrice: "100.00",
+			Measure:      "D61", // minute [unit of angle], no GOBL equivalent
+			VATRate:      "23",
+		}
+
+		line, err := ksefLine.ToGOBL()
+
+		require.NoError(t, err)
+		assert.Equal(t, cbc.Code("D61"), line.Item.Ext.Get(untdid.ExtKeyUnit))
+		assert.Equal(t, cbc.KeyEmpty, line.Item.Unit)
+		assert.Empty(t, line.Item.Meta["unit-label"])
 	})
 
 	t.Run("handles valid GOBL unit codes", func(t *testing.T) {
@@ -584,7 +757,8 @@ func TestLineToGOBL(t *testing.T) {
 		line, err := ksefLine.ToGOBL()
 
 		require.NoError(t, err)
-		assert.Equal(t, org.Unit("h"), line.Item.Unit)
+		assert.Equal(t, org.UnitHour, line.Item.Unit)
+		assert.Empty(t, line.Item.Ext.Get(untdid.ExtKeyUnit))
 	})
 
 	t.Run("preserves invalid unit under Item.Meta unit-label", func(t *testing.T) {
@@ -599,9 +773,9 @@ func TestLineToGOBL(t *testing.T) {
 		line, err := ksefLine.ToGOBL()
 
 		require.NoError(t, err)
-		assert.Equal(t, org.Unit(""), line.Item.Unit)
+		assert.Equal(t, cbc.KeyEmpty, line.Item.Unit)
 		assert.Equal(t, "szt", line.Item.Meta["unit-label"])
-		assert.NoError(t, line.Item.Unit.Validate())
+		assert.Empty(t, line.Item.Ext.Get(untdid.ExtKeyUnit))
 	})
 
 	t.Run("trims whitespace around measure", func(t *testing.T) {
@@ -616,7 +790,7 @@ func TestLineToGOBL(t *testing.T) {
 		line, err := ksefLine.ToGOBL()
 
 		require.NoError(t, err)
-		assert.Equal(t, org.Unit("KGM"), line.Item.Unit)
+		assert.Equal(t, org.UnitKilogram, line.Item.Unit)
 		assert.Empty(t, line.Item.Meta["unit-label"])
 	})
 
@@ -632,7 +806,7 @@ func TestLineToGOBL(t *testing.T) {
 		line, err := ksefLine.ToGOBL()
 
 		require.NoError(t, err)
-		assert.Equal(t, org.Unit(""), line.Item.Unit)
+		assert.Equal(t, cbc.KeyEmpty, line.Item.Unit)
 		assert.Equal(t, "szt", line.Item.Meta["unit-label"])
 	})
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/invopop/gobl/addons/pl/favat"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cal"
 	"github.com/invopop/gobl/cbc"
@@ -60,12 +60,12 @@ type Inv struct {
 	CorrectionReason                   string                       `xml:"PrzyczynaKorekty,omitempty"`
 	CorrectionType                     string                       `xml:"TypKorekty,omitempty"`
 	CorrectedInv                       []*CorrectedInv              `xml:"DaneFaKorygowanej,omitempty"`
-	AdvanceInvoices                    []*AdvanceInvoiceRef         `xml:"FakturaZaliczkowa,omitempty"`
 	PartialAdvancePayments             []*PartialAdvancePayment     `xml:"ZaliczkaCzesciowa,omitempty"`
 	FP                                 int                          `xml:"FP,omitempty"`
 	TP                                 int                          `xml:"TP,omitempty"`
-	ExciseTaxRefund                    int                          `xml:"ZwrotAkcyzy,omitempty"`
 	AdditionalDescription              []*AdditionalDescriptionLine `xml:"DodatkowyOpis,omitempty"`
+	AdvanceInvoices                    []*AdvanceInvoiceRef         `xml:"FakturaZaliczkowa,omitempty"`
+	ExciseTaxRefund                    int                          `xml:"ZwrotAkcyzy,omitempty"`
 	Lines                              []*Line                      `xml:"FaWiersz,omitempty"` // empty for ZAL and KOR_ZAL, use Order instead
 	Settlement                         *Settlement                  `xml:"Rozliczenie,omitempty"`
 	Payment                            *Payment                     `xml:"Platnosc,omitempty"`
@@ -570,14 +570,14 @@ func (inv *Inv) parseInvoiceData(goblInv *bill.Invoice) error {
 			if err != nil {
 				return fmt.Errorf("parsing period start date: %w", err)
 			}
-			goblInv.Ordering.Period.Start = start
+			goblInv.Ordering.Period.Start = &start
 		}
 		if inv.Period.EndDate != "" {
 			end, err := parseDate(inv.Period.EndDate)
 			if err != nil {
 				return fmt.Errorf("parsing period end date: %w", err)
 			}
-			goblInv.Ordering.Period.End = end
+			goblInv.Ordering.Period.End = &end
 		}
 	}
 
@@ -627,7 +627,7 @@ func (inv *Inv) parseInvoiceData(goblInv *bill.Invoice) error {
 				preceding.Reason = inv.CorrectionReason
 			}
 			if inv.CorrectionType != "" {
-				preceding.Ext = tax.ExtensionsOf(tax.ExtMap{
+				preceding.Ext = tax.ExtensionsOf(cbc.CodeMap{
 					favat.ExtKeyEffectiveDate: cbc.Code(inv.CorrectionType),
 				})
 			}
@@ -881,7 +881,7 @@ func (inv *Inv) parsePrepaymentTotals(goblInv *bill.Invoice) error {
 			Key:     e.key,
 			Base:    netAmt,
 			Percent: e.percent,
-			Ext: tax.ExtensionsOf(tax.ExtMap{
+			Ext: tax.ExtensionsOf(cbc.CodeMap{
 				favat.ExtKeyTaxCategory: e.category,
 			}),
 		}

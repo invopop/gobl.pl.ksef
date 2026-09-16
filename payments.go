@@ -3,7 +3,7 @@ package ksef
 import (
 	"fmt"
 
-	"github.com/invopop/gobl/addons/pl/favat"
+	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
 	"github.com/invopop/gobl/cbc"
 	"github.com/invopop/gobl/num"
@@ -95,8 +95,8 @@ func NewPayment(pay *bill.PaymentDetails, totals *bill.Totals) *Payment {
 				accountNumber = account.Number
 			}
 			payment.BankAccounts = append(payment.BankAccounts, &BankAccount{
-				AccountNumber: accountNumber,
-				SWIFT:         account.BIC,
+				AccountNumber: accountNumber.String(),
+				SWIFT:         account.BIC.String(),
 				BankName:      account.Name,
 			})
 		}
@@ -186,12 +186,12 @@ func (inv *Inv) parsePayment(goblInv *bill.Invoice) error {
 			payment.Instructions.CreditTransfer = make([]*pay.CreditTransfer, 0, len(inv.Payment.BankAccounts))
 			for _, account := range inv.Payment.BankAccounts {
 				ct := &pay.CreditTransfer{
-					Number: account.AccountNumber,
+					Number: cbc.Code(account.AccountNumber),
 					Name:   account.BankName,
 				}
 
 				if account.SWIFT != "" {
-					ct.BIC = account.SWIFT
+					ct.BIC = cbc.Code(account.SWIFT)
 				}
 				payment.Instructions.CreditTransfer = append(payment.Instructions.CreditTransfer, ct)
 			}
@@ -235,7 +235,7 @@ func (inv *Inv) parsePayment(goblInv *bill.Invoice) error {
 		if isCreditNote {
 			amt = amt.Invert()
 		}
-		advance := &pay.Advance{
+		advance := &pay.Record{
 			Description: "Advance payment",
 			Amount:      amt,
 		}
@@ -248,18 +248,18 @@ func (inv *Inv) parsePayment(goblInv *bill.Invoice) error {
 		}
 		if inv.Payment.PaymentMean != "" {
 			advance.Key = ParsePaymentMeansCode(inv.Payment.PaymentMean)
-			advance.Ext = tax.ExtensionsOf(tax.ExtMap{
+			advance.Ext = tax.ExtensionsOf(cbc.CodeMap{
 				favat.ExtKeyPaymentMeans: cbc.Code(inv.Payment.PaymentMean),
 			})
 		}
-		payment.Advances = []*pay.Advance{advance}
+		payment.Advances = []*pay.Record{advance}
 	}
 
 	// Parse advance payments
 	if len(inv.Payment.AdvancePayments) > 0 {
-		payment.Advances = make([]*pay.Advance, 0, len(inv.Payment.AdvancePayments))
+		payment.Advances = make([]*pay.Record, 0, len(inv.Payment.AdvancePayments))
 		for _, adv := range inv.Payment.AdvancePayments {
-			advance := &pay.Advance{
+			advance := &pay.Record{
 				Description: "Advance payment", // GOBL requires a description
 				Ext:         tax.MakeExtensions(),
 			}
@@ -345,7 +345,7 @@ func (inv *Inv) deriveSettlementAdvances(goblInv *bill.Invoice, totalDueStr stri
 		if i == 0 {
 			amt = advanceAmt
 		}
-		goblInv.Payment.Advances = append(goblInv.Payment.Advances, &pay.Advance{
+		goblInv.Payment.Advances = append(goblInv.Payment.Advances, &pay.Record{
 			Description: "Payment " + ref.KSeFAdvanceInvoiceNo,
 			Amount:      amt,
 			Ref:         ref.KSeFAdvanceInvoiceNo,
@@ -367,7 +367,7 @@ func ParsePaymentMeansCode(code string) cbc.Key {
 	case "4":
 		return pay.MeansKeyCheque
 	case "5":
-		return pay.MeansKeyOther.With(favat.MeansKeyCredit)
+		return pay.MeansKeyOther.With(pay.MeansKeyCredit)
 	case "6":
 		return pay.MeansKeyCreditTransfer
 	case "7":

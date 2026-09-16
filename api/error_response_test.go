@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	ksef_api "github.com/invopop/gobl.ksef/api"
+	ksef_api "github.com/invopop/gobl.pl.ksef/api"
 	"github.com/stretchr/testify/assert"
 )
 
