@@ -25,14 +25,21 @@ type ErrorResponse struct {
 			ExceptionDescription string `json:"exceptionDescription"`
 		} `json:"exceptionDetailList"`
 	} `json:"exception"`
+	// Status is the shape KSeF uses for some responses, such as 429 Too Many Requests.
+	Status struct {
+		Code        int      `json:"code"`
+		Description string   `json:"description"`
+		Details     []string `json:"details"`
+	} `json:"status"`
 }
 
 // Error implements the error interface
 func (e ErrorResponse) Error() string {
-	msgs := make([]string, len(e.Exception.ExceptionDetailList))
-	for i, detail := range e.Exception.ExceptionDetailList {
-		msgs[i] = fmt.Sprintf("Code %d: %s", detail.ExceptionCode, detail.ExceptionDescription)
+	msgs := make([]string, 0, len(e.Exception.ExceptionDetailList)+len(e.Status.Details))
+	for _, detail := range e.Exception.ExceptionDetailList {
+		msgs = append(msgs, fmt.Sprintf("Code %d: %s", detail.ExceptionCode, detail.ExceptionDescription))
 	}
+	msgs = append(msgs, e.Status.Details...)
 
 	return strings.Join(msgs, ", ")
 }
