@@ -473,6 +473,34 @@ func TestLineToGOBL(t *testing.T) {
 		assert.Equal(t, "23", line.Taxes[0].Percent.Amount().MinimalString())
 	})
 
+	t.Run("treats line with only net total as a single unit", func(t *testing.T) {
+		ksefLine := &ksef.Line{
+			Name:          "Fracht morski",
+			VATRate:       "0 KR",
+			NetPriceTotal: "17758.65",
+		}
+
+		line, err := ksefLine.ToGOBL()
+
+		require.NoError(t, err)
+		assert.Equal(t, "1", line.Quantity.String())
+		assert.Equal(t, "17758.6500", line.Item.Price.String())
+	})
+
+	t.Run("treats line with only gross total as a single unit", func(t *testing.T) {
+		ksefLine := &ksef.Line{
+			Name:            "Service",
+			VATRate:         "23",
+			GrossPriceTotal: "123.00",
+		}
+
+		line, err := ksefLine.ToGOBL()
+
+		require.NoError(t, err)
+		assert.Equal(t, "1", line.Quantity.String())
+		assert.Equal(t, "123.0000", line.Item.Price.String())
+	})
+
 	t.Run("handles line with discount", func(t *testing.T) {
 		ksefLine := &ksef.Line{
 			Name:          "Discounted Item",
