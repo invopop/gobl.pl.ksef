@@ -443,7 +443,7 @@ func newSettlement(invoice *bill.Invoice) *Settlement {
 // parseSettlement maps the KSeF Rozliczenie element back to GOBL invoice-level
 // charges and discounts. KSeF's <Obciazenia> and <Odliczenia> entries carry
 // no VAT information, so they are mapped without taxes — the amounts flow
-// into Totals.Payable via Calculate, which is what the KSeF P_15 reflects.
+// into Totals.Payable via Calculate, which is reconciled against amountToPay.
 //
 // For corrective invoices (KOR / KOR_ZAL / KOR_ROZ), the KSeF XML carries
 // negative monetary amounts (TKwotowy permits sign). parseLines and the
@@ -486,6 +486,14 @@ func (inv *Inv) parseSettlement(goblInv *bill.Invoice) error {
 	}
 
 	return nil
+}
+
+// amountToPay returns DoZaplaty if present, otherwise P_15.
+func (inv *Inv) amountToPay() string {
+	if inv.Settlement != nil && inv.Settlement.AmountToPay != "" {
+		return inv.Settlement.AmountToPay
+	}
+	return inv.TotalAmountDue
 }
 
 // mapSettlementAdvanceRefs maps GOBL advance payment refs to KSeF
@@ -925,8 +933,8 @@ func (inv *Inv) parsePrepaymentTotals(goblInv *bill.Invoice) error {
 
 	totals.TotalWithTax = netSum.Add(taxSum)
 
-	if inv.TotalAmountDue != "" {
-		payable, err := parseAmount(inv.TotalAmountDue)
+	if amount := inv.amountToPay(); amount != "" {
+		payable, err := parseAmount(amount)
 		if err != nil {
 			return fmt.Errorf("parsing total amount due: %w", err)
 		}

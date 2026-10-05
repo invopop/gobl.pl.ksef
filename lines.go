@@ -202,13 +202,15 @@ func (l *Line) ToGOBL() (*bill.Line, error) {
 		line.Period = &cal.Period{Start: &d, End: &end}
 	}
 
-	// Parse quantity
+	// Parse quantity, defaulting to 1 as P_8B is optional
 	if l.Quantity != "" {
 		qty, err := parseAmount(l.Quantity)
 		if err != nil {
 			return nil, err
 		}
 		line.Quantity = qty
+	} else {
+		line.Quantity = num.MakeAmount(1, 0)
 	}
 
 	// Parse unit price

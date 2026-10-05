@@ -169,7 +169,139 @@ const reportedSettlementXML = `<?xml version="1.0" encoding="utf-8"?>
   </Fa>
 </Faktura>`
 
+// dhlCustomsXML has Obciazenia in DoZaplaty but not P_15.
+const dhlCustomsXML = `<?xml version="1.0" encoding="utf-8"?>
+<Faktura xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+  <Naglowek>
+    <KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+    <WariantFormularza>3</WariantFormularza>
+    <DataWytworzeniaFa>2026-10-02T09:29:44Z</DataWytworzeniaFa>
+  </Naglowek>
+  <Podmiot1>
+    <PrefiksPodatnika>PL</PrefiksPodatnika>
+    <DaneIdentyfikacyjne>
+      <NIP>5270022391</NIP>
+      <Nazwa>DHL Express (Poland) Sp. z o.o.</Nazwa>
+    </DaneIdentyfikacyjne>
+    <Adres>
+      <KodKraju>PL</KodKraju>
+      <AdresL1>ul. Wirażowa 37</AdresL1>
+      <AdresL2>02-158 Warszawa</AdresL2>
+    </Adres>
+  </Podmiot1>
+  <Podmiot2>
+    <DaneIdentyfikacyjne>
+      <NIP>8961436398</NIP>
+      <Nazwa>USI ASTEELFLASH POLAND SP. Z O.O.</Nazwa>
+    </DaneIdentyfikacyjne>
+    <Adres>
+      <KodKraju>PL</KodKraju>
+      <AdresL1>INNOWACYJNA NR 4, BISKUPICE PODGORNE</AdresL1>
+      <AdresL2>55-040 KOBIERZYCE</AdresL2>
+    </Adres>
+    <JST>2</JST>
+    <GV>2</GV>
+  </Podmiot2>
+  <Fa>
+    <KodWaluty>PLN</KodWaluty>
+    <P_1>2026-10-02</P_1>
+    <P_2>DBP2343885</P_2>
+    <P_6>2026-10-02</P_6>
+    <P_13_1>114</P_13_1>
+    <P_14_1>26.22</P_14_1>
+    <P_15>140.22</P_15>
+    <Adnotacje>
+      <P_16>2</P_16>
+      <P_17>2</P_17>
+      <P_18>2</P_18>
+      <P_18A>2</P_18A>
+      <Zwolnienie><P_19N>1</P_19N></Zwolnienie>
+      <NoweSrodkiTransportu><P_22N>1</P_22N></NoweSrodkiTransportu>
+      <P_23>2</P_23>
+      <PMarzy><P_PMarzyN>1</P_PMarzyN></PMarzy>
+    </Adnotacje>
+    <RodzajFaktury>VAT</RodzajFaktury>
+    <FaWiersz>
+      <NrWierszaFa>1</NrWierszaFa>
+      <P_7>Obsluga naleznosci celno-podatkowch</P_7>
+      <P_8A>szt.</P_8A>
+      <P_8B>1</P_8B>
+      <P_9A>69</P_9A>
+      <P_11>69</P_11>
+      <P_11Vat>15.87</P_11Vat>
+      <P_12>23</P_12>
+    </FaWiersz>
+    <FaWiersz>
+      <NrWierszaFa>2</NrWierszaFa>
+      <P_7>Autoryzacja odprawy celnej</P_7>
+      <P_8A>szt.</P_8A>
+      <P_8B>1</P_8B>
+      <P_9A>45</P_9A>
+      <P_11>45</P_11>
+      <P_11Vat>10.35</P_11Vat>
+      <P_12>23</P_12>
+    </FaWiersz>
+    <Rozliczenie>
+      <Obciazenia>
+        <Kwota>40</Kwota>
+        <Powod>Naleznosci celne</Powod>
+      </Obciazenia>
+      <Obciazenia>
+        <Kwota>445</Kwota>
+        <Powod>Naleznosci podatkowe VAT</Powod>
+      </Obciazenia>
+      <Obciazenia>
+        <Kwota>0</Kwota>
+        <Powod>Inne oplaty</Powod>
+      </Obciazenia>
+      <SumaObciazen>485</SumaObciazen>
+      <DoZaplaty>625.22</DoZaplaty>
+    </Rozliczenie>
+    <Platnosc>
+      <TerminPlatnosci>
+        <Termin>2026-10-06</Termin>
+      </TerminPlatnosci>
+    </Platnosc>
+  </Fa>
+</Faktura>`
+
 func TestSettlementInbound(t *testing.T) {
+	t.Run("DoZaplaty is reconciled when P_15 excludes Obciazenia", func(t *testing.T) {
+		env, err := ksef.ParseKSeF([]byte(dhlCustomsXML))
+		require.NoError(t, err)
+
+		inv, ok := env.Extract().(*bill.Invoice)
+		require.True(t, ok)
+
+		require.Len(t, inv.Charges, 3)
+		assert.Equal(t, "445.00", inv.Charges[1].Amount.String())
+		assert.Equal(t, "Naleznosci podatkowe VAT", inv.Charges[1].Reason)
+
+		require.NotNil(t, inv.Totals)
+		assert.Equal(t, "26.22", inv.Totals.Tax.String())
+		assert.Equal(t, "625.22", inv.Totals.Payable.String())
+		assert.Nil(t, inv.Totals.Rounding)
+	})
+
+	t.Run("DoZaplaty is used for paid prepayment invoices without lines", func(t *testing.T) {
+		start := strings.Index(dhlCustomsXML, "<FaWiersz>")
+		end := strings.LastIndex(dhlCustomsXML, "</FaWiersz>") + len("</FaWiersz>")
+		x := dhlCustomsXML[:start] + dhlCustomsXML[end:]
+		x = strings.Replace(x, "<RodzajFaktury>VAT</RodzajFaktury>", "<RodzajFaktury>ZAL</RodzajFaktury>", 1)
+		x = strings.Replace(x, "<Platnosc>", "<Platnosc>\n      <Zaplacono>1</Zaplacono>\n      <DataZaplaty>2026-10-02</DataZaplaty>", 1)
+
+		env, err := ksef.ParseKSeF([]byte(x))
+		require.NoError(t, err)
+
+		inv, ok := env.Extract().(*bill.Invoice)
+		require.True(t, ok)
+
+		require.NotNil(t, inv.Totals)
+		assert.Equal(t, "625.22", inv.Totals.Payable.String())
+		require.NotNil(t, inv.Totals.Due)
+		assert.Equal(t, "0.00", inv.Totals.Due.String())
+	})
+
 	t.Run("regression: reported invoice with Obciazenia parses without rounding error", func(t *testing.T) {
 		env, err := ksef.ParseKSeF([]byte(reportedSettlementXML))
 		require.NoError(t, err, "should not return RoundingError once Rozliczenie is parsed")

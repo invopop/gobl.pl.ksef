@@ -228,7 +228,7 @@ func (inv *Inv) parsePayment(goblInv *bill.Invoice) error {
 
 	// Handle paid in full (Zaplacono=1) with no partial advance payments
 	if inv.Payment.PaidMarker == "1" && len(inv.Payment.AdvancePayments) == 0 {
-		amt, err := parseAmount(inv.TotalAmountDue)
+		amt, err := parseAmount(inv.amountToPay())
 		if err != nil {
 			return fmt.Errorf("parsing total amount for advance: %w", err)
 		}
