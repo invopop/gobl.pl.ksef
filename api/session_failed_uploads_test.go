@@ -36,21 +36,28 @@ const failedInvoicesDuplicateJSON = `{
   ]
 }`
 
-func TestGetFailedUploadDataDecodesExtensions(t *testing.T) {
+// failedUploadsSession returns an authenticated session "SESSION-REF" whose
+// failed-invoices endpoint answers with body.
+func failedUploadsSession(t *testing.T, body string) *UploadSession {
+	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/sessions/SESSION-REF/invoices/failed", r.URL.Path)
 		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(failedInvoicesDuplicateJSON))
+		_, _ = w.Write([]byte(body))
 	}))
-	defer srv.Close()
+	t.Cleanup(srv.Close)
 
 	client := &Client{clientOpts: clientOpts{
 		client:      resty.New(),
 		url:         srv.URL,
 		accessToken: &apiToken{Token: "test-token", ValidUntil: time.Now().Add(time.Hour).Format(time.RFC3339Nano)},
 	}}
-	session := &UploadSession{ReferenceNumber: "SESSION-REF", Client: client}
+	return &UploadSession{ReferenceNumber: "SESSION-REF", Client: client}
+}
+
+func TestGetFailedUploadDataDecodesExtensions(t *testing.T) {
+	session := failedUploadsSession(t, failedInvoicesDuplicateJSON)
 
 	failed, err := session.GetFailedUploadData(context.Background())
 	require.NoError(t, err)
@@ -73,17 +80,7 @@ func TestGetFailedUploadDataWithoutExtensions(t *testing.T) {
 	}
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(body))
-			}))
-			defer srv.Close()
-			client := &Client{clientOpts: clientOpts{
-				client:      resty.New(),
-				url:         srv.URL,
-				accessToken: &apiToken{Token: "test-token", ValidUntil: time.Now().Add(time.Hour).Format(time.RFC3339Nano)},
-			}}
-			session := &UploadSession{ReferenceNumber: "SESSION-REF", Client: client}
+			session := failedUploadsSession(t, body)
 
 			failed, err := session.GetFailedUploadData(context.Background())
 			require.NoError(t, err)
