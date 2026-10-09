@@ -61,46 +61,50 @@ type Line struct {
 // and emits gross fields (P_9B/P_11A, art. 106e(7)-(8)) for gross-priced
 // invoices.
 func NewLines(lines []*bill.Line) []*Line {
-	return newLines(lines, false)
+	return newLines(lines, false, false)
 }
 
 // NewLinesForInvoice generates KSeF lines from a GOBL invoice, choosing
 // between net (P_9A/P_11) and gross (P_9B/P_11A) line fields based on
 // invoice.Tax.PricesInclude.
 func NewLinesForInvoice(invoice *bill.Invoice) []*Line {
-	return newLines(invoice.Lines, invoicePricesIncludeVAT(invoice))
+	return newLines(invoice.Lines, invoicePricesIncludeVAT(invoice), isCreditNote(invoice))
 }
 
-func newLines(lines []*bill.Line, pricesIncludeVAT bool) []*Line {
+func newLines(lines []*bill.Line, pricesIncludeVAT, negate bool) []*Line {
 	var Lines []*Line
 
 	for _, line := range lines {
-		Lines = append(Lines, newLine(line, pricesIncludeVAT))
+		Lines = append(Lines, newLine(line, pricesIncludeVAT, negate))
 	}
 
 	return Lines
 }
 
-func newLine(line *bill.Line, pricesIncludeVAT bool) *Line {
+func newLine(line *bill.Line, pricesIncludeVAT, negate bool) *Line {
 	l := &Line{
 		LineNumber: line.Index,
 		UniqueID:   string(line.UUID),
 		Name:       line.Item.Name,
 		Measure:    lineMeasure(line),
-		Quantity:   line.Quantity.String(),
-		Discount:   lineDiscount(line),
+		Quantity:   signed(line.Quantity, negate).String(),
+		Discount:   lineDiscount(line, negate),
 	}
 
 	if line.Period != nil && line.Period.End != nil {
 		l.CompletionDate = line.Period.End.String()
 	}
 
+	var total string
+	if line.Total != nil {
+		total = signed(*line.Total, negate).String()
+	}
 	if pricesIncludeVAT {
 		l.GrossUnitPrice = line.Item.Price.String()
-		l.GrossPriceTotal = line.Total.String()
+		l.GrossPriceTotal = total
 	} else {
 		l.NetUnitPrice = line.Item.Price.String()
-		l.NetPriceTotal = line.Total.String()
+		l.NetPriceTotal = total
 	}
 
 	if tc := line.Taxes.Get(tax.CategoryVAT); tc != nil {
@@ -165,7 +169,7 @@ func lineMeasure(line *bill.Line) string {
 	return line.Item.Ext.Get(untdid.ExtKeyUnit).String()
 }
 
-func lineDiscount(line *bill.Line) string {
+func lineDiscount(line *bill.Line, negate bool) string {
 	if len(line.Discounts) == 0 {
 		return ""
 	}
@@ -173,7 +177,7 @@ func lineDiscount(line *bill.Line) string {
 	amount := num.MakeAmount(0, 2)
 
 	for _, discount := range line.Discounts {
-		amount = amount.Add(discount.Amount)
+		amount = amount.Add(signed(discount.Amount, negate))
 	}
 
 	return amount.String()

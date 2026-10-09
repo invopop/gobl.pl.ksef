@@ -193,6 +193,8 @@ func NewFavatFooter(inv *bill.Invoice) *Stopka {
 
 // NewFavatInv gets invoice data from GOBL invoice
 func NewFavatInv(invoice *bill.Invoice) *Inv {
+	// KSeF corrective invoices require negative amounts.
+	negate := isCreditNote(invoice)
 
 	inv := &Inv{
 		CurrencyCode:     invoice.Currency.String(),
@@ -201,8 +203,8 @@ func NewFavatInv(invoice *bill.Invoice) *Inv {
 		SequentialNumber: invoiceNumber(invoice.Series, invoice.Code),
 		Annotations:      newAnnotations(invoice),
 		Lines:            NewLinesForInvoice(invoice),
-		Settlement:       newSettlement(invoice),
-		Payment:          NewPayment(invoice.Payment, invoice.Totals),
+		Settlement:       newSettlement(invoice, negate),
+		Payment:          newPayment(invoice.Payment, invoice.Totals, negate),
 	}
 
 	if invoice.OperationDate != nil {
@@ -224,9 +226,9 @@ func NewFavatInv(invoice *bill.Invoice) *Inv {
 	//     total of the invoice (Totals.Payable). The prepayment is just
 	//     payment-tracking information and does not reduce P_15.
 	if (inv.isSettlementType() || inv.isPrepaymentType()) && invoice.Totals.Due != nil {
-		inv.TotalAmountDue = invoice.Totals.Due.String()
+		inv.TotalAmountDue = signed(*invoice.Totals.Due, negate).String()
 	} else {
-		inv.TotalAmountDue = invoice.Totals.Payable.String()
+		inv.TotalAmountDue = signed(invoice.Totals.Payable, negate).String()
 	}
 
 	taxes := invoice.Totals.Taxes
@@ -250,7 +252,7 @@ func NewFavatInv(invoice *bill.Invoice) *Inv {
 		}
 	}
 
-	inv.setTaxRates(taxes, xr)
+	inv.setTaxRates(taxes, xr, negate)
 
 	if len(invoice.Notes) > 0 {
 		for _, note := range invoice.Notes {
@@ -342,7 +344,19 @@ func invoicePricesIncludeVAT(invoice *bill.Invoice) bool {
 	return invoice.Tax != nil && invoice.Tax.PricesInclude == tax.CategoryVAT
 }
 
-func (inv *Inv) setTaxRates(taxes *tax.Total, xr *currency.ExchangeRate) {
+func isCreditNote(invoice *bill.Invoice) bool {
+	return invoice.Type == bill.InvoiceTypeCreditNote
+}
+
+// signed returns the amount inverted if negate is true.
+func signed(a num.Amount, negate bool) num.Amount {
+	if negate {
+		return a.Invert()
+	}
+	return a
+}
+
+func (inv *Inv) setTaxRates(taxes *tax.Total, xr *currency.ExchangeRate, negate bool) {
 	if taxes == nil {
 		return
 	}
@@ -352,50 +366,52 @@ func (inv *Inv) setTaxRates(taxes *tax.Total, xr *currency.ExchangeRate) {
 		}
 
 		for _, rate := range cat.Rates {
+			base := signed(rate.Base, negate)
+			amount := signed(rate.Amount, negate)
 			switch rate.Ext.Get(favat.ExtKeyTaxCategory) {
 			case "1": // standard rate
-				inv.StandardRateNetSale = rate.Base.String()
-				inv.StandardRateTax = rate.Amount.String()
+				inv.StandardRateNetSale = base.String()
+				inv.StandardRateTax = amount.String()
 				if xr != nil {
-					inv.StandardRateTaxConvertedToPln = xr.Convert(rate.Amount).String()
+					inv.StandardRateTaxConvertedToPln = xr.Convert(amount).String()
 				}
 			case "2": // reduced rate
-				inv.ReducedRateNetSale = rate.Base.String()
-				inv.ReducedRateTax = rate.Amount.String()
+				inv.ReducedRateNetSale = base.String()
+				inv.ReducedRateTax = amount.String()
 				if xr != nil {
-					inv.ReducedRateTaxConvertedToPln = xr.Convert(rate.Amount).String()
+					inv.ReducedRateTaxConvertedToPln = xr.Convert(amount).String()
 				}
 			case "3": // super reduced rate
-				inv.SuperReducedRateNetSale = rate.Base.String()
-				inv.SuperReducedRateTax = rate.Amount.String()
+				inv.SuperReducedRateNetSale = base.String()
+				inv.SuperReducedRateTax = amount.String()
 				if xr != nil {
-					inv.SuperReducedRateTaxConvertedToPln = xr.Convert(rate.Amount).String()
+					inv.SuperReducedRateTaxConvertedToPln = xr.Convert(amount).String()
 				}
 			case "4": // taxi rate
-				inv.TaxiRateNetSale = rate.Base.String()
-				inv.TaxiRateTax = rate.Amount.String()
+				inv.TaxiRateNetSale = base.String()
+				inv.TaxiRateTax = amount.String()
 				if xr != nil {
-					inv.TaxiRateTaxConvertedToPln = xr.Convert(rate.Amount).String()
+					inv.TaxiRateTaxConvertedToPln = xr.Convert(amount).String()
 				}
 			case "5": // OSS rate (no PLN-converted variant in FA3 schema)
-				inv.OSSNetSale = rate.Base.String()
-				inv.OSSTax = rate.Amount.String()
+				inv.OSSNetSale = base.String()
+				inv.OSSTax = amount.String()
 			case "6.1": // zero tax except intra-community supply
-				inv.ZeroTaxExceptIntraCommunityNetSale = rate.Base.String()
+				inv.ZeroTaxExceptIntraCommunityNetSale = base.String()
 			case "6.2": // intra-community supply
-				inv.IntraCommunityNetSale = rate.Base.String()
+				inv.IntraCommunityNetSale = base.String()
 			case "6.3": // export supply
-				inv.ExportNetSale = rate.Base.String()
+				inv.ExportNetSale = base.String()
 			case "7": // tax exempt supply
-				inv.TaxExemptNetSale = rate.Base.String()
+				inv.TaxExemptNetSale = base.String()
 			case "8": // outside scope supply
-				inv.OutsideScopeNetSale = rate.Base.String()
+				inv.OutsideScopeNetSale = base.String()
 			case "9": // reverse charge supply
-				inv.ReverseChargeNetSale = rate.Base.String()
+				inv.ReverseChargeNetSale = base.String()
 			case "10": // domestic reverse charge supply
-				inv.DomesticReverseChargeNetSale = rate.Base.String()
+				inv.DomesticReverseChargeNetSale = base.String()
 			case "11": // margin supply
-				inv.MarginNetSale = rate.Base.String()
+				inv.MarginNetSale = base.String()
 			}
 		}
 	}
@@ -404,7 +420,7 @@ func (inv *Inv) setTaxRates(taxes *tax.Total, xr *currency.ExchangeRate) {
 // newSettlement builds the KSeF Rozliczenie element from invoice-level
 // charges and discounts. Returns nil when neither is present so the
 // element is omitted from the XML output.
-func newSettlement(invoice *bill.Invoice) *Settlement {
+func newSettlement(invoice *bill.Invoice, negate bool) *Settlement {
 	if len(invoice.Charges) == 0 && len(invoice.Discounts) == 0 {
 		return nil
 	}
@@ -413,12 +429,13 @@ func newSettlement(invoice *bill.Invoice) *Settlement {
 
 	var totalCharges num.Amount
 	for _, c := range invoice.Charges {
+		amount := signed(c.Amount, negate)
 		s.Charges = append(s.Charges, &ChargeOrDeduction{
-			Amount: c.Amount.String(),
+			Amount: amount.String(),
 			Reason: c.Reason,
 		})
-		totalCharges = totalCharges.MatchPrecision(c.Amount)
-		totalCharges = totalCharges.Add(c.Amount)
+		totalCharges = totalCharges.MatchPrecision(amount)
+		totalCharges = totalCharges.Add(amount)
 	}
 	if len(s.Charges) > 0 {
 		s.TotalCharges = totalCharges.String()
@@ -426,12 +443,13 @@ func newSettlement(invoice *bill.Invoice) *Settlement {
 
 	var totalDeductions num.Amount
 	for _, d := range invoice.Discounts {
+		amount := signed(d.Amount, negate)
 		s.Deductions = append(s.Deductions, &ChargeOrDeduction{
-			Amount: d.Amount.String(),
+			Amount: amount.String(),
 			Reason: d.Reason,
 		})
-		totalDeductions = totalDeductions.MatchPrecision(d.Amount)
-		totalDeductions = totalDeductions.Add(d.Amount)
+		totalDeductions = totalDeductions.MatchPrecision(amount)
+		totalDeductions = totalDeductions.Add(amount)
 	}
 	if len(s.Deductions) > 0 {
 		s.TotalDeductions = totalDeductions.String()

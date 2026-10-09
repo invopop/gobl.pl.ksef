@@ -67,6 +67,10 @@ type Discount struct {
 
 // NewPayment gets payment data from GOBL invoice
 func NewPayment(pay *bill.PaymentDetails, totals *bill.Totals) *Payment {
+	return newPayment(pay, totals, false)
+}
+
+func newPayment(pay *bill.PaymentDetails, totals *bill.Totals, negate bool) *Payment {
 	if pay == nil {
 		return nil
 	}
@@ -140,7 +144,7 @@ func NewPayment(pay *bill.PaymentDetails, totals *bill.Totals) *Payment {
 
 			for _, advance := range advances {
 				advancePayment := &AdvancePayment{
-					PaymentAmount: advance.Amount.String(),
+					PaymentAmount: signed(advance.Amount, negate).String(),
 					PaymentDate:   advance.Date.String(),
 				}
 

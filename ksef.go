@@ -74,14 +74,6 @@ func BuildFavat(env *gobl.Envelope) (*Invoice, error) {
 		return nil, fmt.Errorf("rounding invoice to currency precision: %w", err)
 	}
 
-	if inv.Type == bill.InvoiceTypeCreditNote {
-		// In KSEF credit notes become corrective invoices,
-		// which require negative totals.
-		if err := inv.Invert(); err != nil {
-			return nil, err
-		}
-	}
-
 	invoice := &Invoice{
 		XMLName:      xml.Name{Local: RootElementName},
 		XSINamespace: XSINamespace,
