@@ -1,31 +1,10 @@
 # Authentication
 
+Based on:
+
 - [Authentication in KSEF](https://github.com/CIRFMF/ksef-docs/blob/main/uwierzytelnianie.md) (in Polish)
-- [XAdEs digital signature](https://github.com/CIRFMF/ksef-docs/blob/main/auth/podpis-xades.md) (in Polish)
-- [How to use the official .NET client to generate a test XAdEs certificate](https://github.com/CIRFMF/ksef-docs/blob/main/auth/testowe-certyfikaty-i-podpisy-xades.md) (in Polish)
-
-## How to obtain a certificate
-
-Authentication with production KSeF needs to be done using a digital certificate issued by trusted service providers on the European Union [Trusted List](https://eidas.ec.europa.eu/efda/trust-services/browse/eidas/tls). Certificates in the test environment can be self-signed.
-
-There is an online process to register a company:
-
-- [Test Company login](https://ksef-test.mf.gov.pl/web/login)
-- [Generate a fake NIP (tax ID)](http://generatory.it/)
-
-Once inside the test environment, you can create an Authorization token to use to make requests to the API.
-
-### How to generate a test certificate
-
-Based on [this](https://github.com/CIRFMF/ksef-docs/blob/main/auth/testowe-certyfikaty-i-podpisy-xades.md) document.
-
-There is a CLI application in .NET that allows to generate a self-signed certificate that can be used in the test environment. To run the application:
-
-1. Install .NET 10.0 SDK
-2. Download the repository: `git clone https://github.com/CIRFMF/ksef-client-csharp.git`
-3. Go to the application directory: `cd ksef-client-csharp/KSeF.Client.Tests.CertTestApp`
-4. Run the application: `dotnet run --framework net10.0 --output file --nip 8976111986 --no-startup-warnings`
-5. The application will generate a self-signed certificate and save it to the current directory. It will generate two files: `cert-{timestamp}.pfx` and `cert-{timestamp}.cer`.
+- [XAdES digital signature](https://github.com/CIRFMF/ksef-docs/blob/main/auth/podpis-xades.md) (in Polish)
+- [How to use the official .NET client to generate a test XAdES certificate](https://github.com/CIRFMF/ksef-docs/blob/main/auth/testowe-certyfikaty-i-podpisy-xades.md) (in Polish)
 
 ## Login to the KSeF API
 
@@ -59,7 +38,11 @@ Using an API endpoint, a subject having appropriate permissions to a given conte
 
 ### How to login using XAdES digital signature?
 
-At first, it's necessary to have a certificate. For the testing environment, a self-signed certificate is allowed. For the production environment, a certificate issued by a [trusted service provider recognized by EU](https://eidas.ec.europa.eu/efda/trust-services/browse/eidas/tls) is required.
+At first, it's necessary to have a certificate. For the testing environment, a self-signed certificate is allowed. For the production environment, it's necessary to have:
+- a qualified certificate issued by a [trusted service provider recognized by EU](https://eidas.ec.europa.eu/efda/trust-services/browse/eidas/tls)
+- a KSeF certificate - it's a type of certificate only for accessing KSeF and generated on demand using KSeF, intended for client applications and other automated operations.
+
+See [./authentication-requirements.md](here) for details.
 
 For a login request, create an XML document containing:
 - challenge string
@@ -80,7 +63,7 @@ KSEF token (separate type from authentication token, access token and refresh to
 
 Users logged in with XAdES can create, list and delete KSEF tokens using the API.
 
-### How to obtain the public key
+## How to obtain KSeF's public key
 
 To obtain the public key certificate, use `GET /security/public-key-certificates`.
 
@@ -90,11 +73,10 @@ Public key is needed to:
 1. Login with KSeF token using the `POST /auth/ksef-token` endpoint.
 2. Encrypt a symmetric AES key when uploading invoices (in both online and batch formats) and exporting (batch) incoming invoices. File upload and export endpoints don't require `accessToken`, but they accept or return chunks of the data respectively encrypted with the provided symmetric AES key. Online upload endpoint is a regular HTTP endpoint using `accessToken` for authentication, but also requires providing a key, and the invoice must be encrypted with that key.
 
-## How to authorize an external company to act on your behalf
+## How to authorize a non-Polish company to access KSeF
 
-If you are a Polish company X, to allow company Y to act on your behalf in KSeF:
-1. Company Y needs to obtain a [qualified EU certificate](https://eidas.ec.europa.eu/efda/trust-services/browse/eidas/tls).
-2. The Polish company X needs to give company Y permissions. It's possible to do this through the API endpoint for this purpose, `permissions/eu-entities/administration/grants`, where company X provides company Y's certificate fingerprint, EU VAT number and company name. It's also possible to do this through the KSeF web interface - [a video showing how to do it is here](https://youtu.be/COXvohndNCA).
-3. After that, company Y can login to KSeF API using the qualified EU certificate, and providing context identifier (`NipVatUe`) containing company X's NIP (Polish business entity identifier) and Y's EU VAT number.
+If you are a Polish company X, having a contract with company Y based in another European Union country, it's possible to give access permissions to company Y to see and upload invoices:
 
-`NipVatUe` context binds a Polish company identified by NIP with EU business entity identified by EU VAT number.
+1. Company Y needs to obtain an appropriate certificate - a qualified EU certificate
+2. The Polish company X needs to give company Y permissions. It's possible to do this through the API endpoint for this purpose, `permissions/eu-entities/administration/grants`, where company X provides company Y's certificate fingerprint, EU VAT number and company name. It's also possible to do this through the web interface - [a video showing how to do it is here](https://youtu.be/COXvohndNCA).
+3. After that, company Y can login to KSeF API using the qualified EU certificate, and providing context identifier (NipVatUe) containing company X's NIP (Polish business entity identifier) and Y's EU VAT number.
