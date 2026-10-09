@@ -259,3 +259,67 @@ func TestBuildFAVATRounding(t *testing.T) {
 		assert.Equal(t, "10.00", doc.Inv.Lines[0].NetPriceTotal)
 	})
 }
+
+func TestBuildFAVATCreditNote(t *testing.T) {
+	load := func(t *testing.T) (*gobl.Envelope, *bill.Invoice) {
+		t.Helper()
+		env, err := test.LoadTestEnvelope("credit-note-standard.json")
+		require.NoError(t, err)
+		return env, env.Extract().(*bill.Invoice)
+	}
+
+	t.Run("should negate amounts without modifying the envelope", func(t *testing.T) {
+		env, inv := load(t)
+
+		doc, err := ksef.BuildFavat(env)
+		require.NoError(t, err)
+
+		assert.Equal(t, "-10", doc.Inv.Lines[0].Quantity)
+		assert.Equal(t, "-100.00", doc.Inv.Lines[0].NetPriceTotal)
+		assert.Equal(t, "-123.00", doc.Inv.TotalAmountDue)
+		assert.Equal(t, "10", inv.Lines[0].Quantity.String())
+		assert.Equal(t, "123.00", inv.Totals.Payable.String())
+	})
+
+	t.Run("should handle credit notes with bypass tag", func(t *testing.T) {
+		env, inv := load(t)
+		inv.SetTags(tax.TagBypass)
+		// Totals that would not survive a recalculation
+		rate := inv.Totals.Taxes.Categories[0].Rates[0]
+		rate.Amount = num.MakeAmount(2301, 2)
+		inv.Totals.Taxes.Categories[0].Amount = rate.Amount
+		inv.Totals.Taxes.Sum = rate.Amount
+		inv.Totals.Tax = rate.Amount
+		inv.Totals.TotalWithTax = num.MakeAmount(12301, 2)
+		inv.Totals.Payable = inv.Totals.TotalWithTax
+
+		doc, err := ksef.BuildFavat(env)
+		require.NoError(t, err)
+
+		assert.Equal(t, "KOR", doc.Inv.InvoiceType)
+		assert.Equal(t, "-10", doc.Inv.Lines[0].Quantity)
+		assert.Equal(t, "-100.00", doc.Inv.Lines[0].NetPriceTotal)
+		assert.Equal(t, "-100.00", doc.Inv.StandardRateNetSale)
+		assert.Equal(t, "-23.01", doc.Inv.StandardRateTax)
+		assert.Equal(t, "-123.01", doc.Inv.TotalAmountDue)
+		assert.Equal(t, "123.01", inv.Totals.Payable.String())
+
+		data, err := doc.Bytes()
+		require.NoError(t, err)
+		test.ValidateAgainstFA3Schema(t, data)
+	})
+
+	t.Run("should handle credit notes with rounding", func(t *testing.T) {
+		env, inv := load(t)
+		rounding := num.MakeAmount(-2, 2)
+		inv.Totals.Rounding = &rounding
+		require.NoError(t, env.Calculate())
+		require.Equal(t, "122.98", inv.Totals.Payable.String())
+
+		doc, err := ksef.BuildFavat(env)
+		require.NoError(t, err)
+
+		assert.Equal(t, "-23.00", doc.Inv.StandardRateTax)
+		assert.Equal(t, "-122.98", doc.Inv.TotalAmountDue)
+	})
+}
