@@ -2,6 +2,7 @@ package ksef
 
 import (
 	"fmt"
+	"strings"
 
 	favat "github.com/invopop/gobl.pl.ksef/addon"
 	"github.com/invopop/gobl/bill"
@@ -66,12 +67,12 @@ type Discount struct {
 }
 
 // NewPayment gets payment data from GOBL invoice
-func NewPayment(pay *bill.PaymentDetails, totals *bill.Totals) *Payment {
-	return newPayment(pay, totals, false)
+func NewPayment(details *bill.PaymentDetails, totals *bill.Totals) *Payment {
+	return newPayment(details, totals, false)
 }
 
-func newPayment(pay *bill.PaymentDetails, totals *bill.Totals, negate bool) *Payment {
-	if pay == nil {
+func newPayment(details *bill.PaymentDetails, totals *bill.Totals, negate bool) *Payment {
+	if details == nil {
 		return nil
 	}
 
@@ -80,12 +81,15 @@ func newPayment(pay *bill.PaymentDetails, totals *bill.Totals, negate bool) *Pay
 		AdvancePayments: []*AdvancePayment{},
 	}
 
-	if instructions := pay.Instructions; instructions != nil {
+	if instructions := details.Instructions; instructions != nil {
 		paymentMeansCode := instructions.Ext.Get(favat.ExtKeyPaymentMeans).String()
 
 		if paymentMeansCode == "" && instructions.Key != "" {
 			payment.OtherPaymentMeanMarker = "1"
 			payment.OtherPaymentMean = instructions.Key.String()
+			if instructions.Key == pay.MeansKeyOther && instructions.Detail != "" {
+				payment.OtherPaymentMean = instructions.Detail
+			}
 		} else if paymentMeansCode != "" {
 			payment.PaymentMean = paymentMeansCode
 		}
@@ -106,8 +110,8 @@ func newPayment(pay *bill.PaymentDetails, totals *bill.Totals, negate bool) *Pay
 		}
 	}
 
-	if terms := pay.Terms; terms != nil {
-		for _, dueDate := range pay.Terms.DueDates {
+	if terms := details.Terms; terms != nil {
+		for _, dueDate := range details.Terms.DueDates {
 			payment.DueDates = append(payment.DueDates, &DueDate{
 				Date: dueDate.Date.String(),
 			})
@@ -121,7 +125,7 @@ func newPayment(pay *bill.PaymentDetails, totals *bill.Totals, negate bool) *Pay
 	// 2 = paid in full after partial payments, and the last payment is the final one
 	// If the invoice is not paid at all, do not add PaidMarker or PartiallyPaidMarker.
 
-	if advances := pay.Advances; advances != nil {
+	if advances := details.Advances; advances != nil {
 		if len(advances) == 1 && totals.Due.IsZero() {
 			// Invoice already paid in full in one payment
 			payment.PaidMarker = "1"
@@ -168,7 +172,7 @@ func (inv *Inv) parsePayment(goblInv *bill.Invoice) error {
 	payment := &bill.PaymentDetails{}
 
 	// Parse payment instructions
-	if inv.Payment.PaymentMean != "" || len(inv.Payment.BankAccounts) > 0 {
+	if inv.Payment.PaymentMean != "" || inv.Payment.OtherPaymentMeanMarker == "1" || len(inv.Payment.BankAccounts) > 0 {
 		payment.Instructions = &pay.Instructions{
 			Ext: tax.MakeExtensions(),
 		}
@@ -178,7 +182,8 @@ func (inv *Inv) parsePayment(goblInv *bill.Invoice) error {
 			payment.Instructions.Key = ParsePaymentMeansCode(inv.Payment.PaymentMean)
 			payment.Instructions.Ext = payment.Instructions.Ext.Set(favat.ExtKeyPaymentMeans, cbc.Code(inv.Payment.PaymentMean))
 		} else if inv.Payment.OtherPaymentMeanMarker == "1" {
-			payment.Instructions.Key = cbc.Key(inv.Payment.OtherPaymentMean)
+			payment.Instructions.Key = pay.MeansKeyOther
+			payment.Instructions.Detail = strings.TrimSpace(inv.Payment.OtherPaymentMean)
 		} else if len(inv.Payment.BankAccounts) > 0 {
 			// When bank accounts are present without an explicit payment method,
 			// default to credit transfer.
@@ -256,7 +261,9 @@ func (inv *Inv) parsePayment(goblInv *bill.Invoice) error {
 				favat.ExtKeyPaymentMeans: cbc.Code(inv.Payment.PaymentMean),
 			})
 		}
-		payment.Advances = []*pay.Record{advance}
+		if !amt.IsZero() {
+			payment.Advances = []*pay.Record{advance}
+		}
 	}
 
 	// Parse advance payments

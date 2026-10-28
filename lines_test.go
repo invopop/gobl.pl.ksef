@@ -539,6 +539,67 @@ func TestLineToGOBL(t *testing.T) {
 		assert.Equal(t, "15.00", line.Discounts[0].Amount.String())
 	})
 
+	discountLine := func(qty, price, discount, total string) *ksef.Line {
+		return &ksef.Line{Name: "Item", Quantity: qty, NetUnitPrice: price, Discount: discount, VATRate: "23", NetPriceTotal: total}
+	}
+
+	t.Run("multiplies P_10 by quantity when it is per unit", func(t *testing.T) {
+		line, err := discountLine("10", "227.78", "72.89", "1548.9").ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, line.Discounts, 1)
+		assert.Equal(t, "728.90", line.Discounts[0].Amount.String())
+	})
+
+	t.Run("flips the sign of a negative per unit P_10", func(t *testing.T) {
+		line, err := discountLine("2", "100.00", "-10.00", "180.00").ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, line.Discounts, 1)
+		assert.Equal(t, "20.00", line.Discounts[0].Amount.String())
+	})
+
+	t.Run("flips the sign of a negative P_10", func(t *testing.T) {
+		line, err := discountLine("10", "287.76", "-2014.32", "863.28").ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, line.Discounts, 1)
+		assert.Equal(t, "2014.32", line.Discounts[0].Amount.String())
+	})
+
+	t.Run("uses the net discount when P_10 is on the gross price", func(t *testing.T) {
+		ksefLine := discountLine("1.000", "34.14", "4.20", "30.72")
+		ksefLine.GrossUnitPrice = "41.99"
+		ksefLine.GrossPriceTotal = "37.79"
+
+		line, err := ksefLine.ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, line.Discounts, 1)
+		assert.Equal(t, "3.42", line.Discounts[0].Amount.Rescale(2).String())
+	})
+
+	t.Run("uses the net discount when P_10 is per unit on the gross price", func(t *testing.T) {
+		ksefLine := discountLine("15", "4.29", "0.45", "57.86")
+		ksefLine.GrossUnitPrice = "4.5"
+		ksefLine.GrossPriceTotal = "60.75"
+
+		line, err := ksefLine.ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, line.Discounts, 1)
+		assert.Equal(t, "6.49", line.Discounts[0].Amount.Rescale(2).String())
+	})
+
+	t.Run("keeps the decimals of a P_10 that matches the line total", func(t *testing.T) {
+		line, err := discountLine("3", "10.00", "0.3333", "29.67").ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, line.Discounts, 1)
+		assert.Equal(t, "0.3333", line.Discounts[0].Amount.String())
+	})
+
+	t.Run("keeps P_10 as the line discount when it is not per unit", func(t *testing.T) {
+		line, err := discountLine("3", "318.18", "5.00", "1004.54").ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, line.Discounts, 1)
+		assert.Equal(t, "5.00", line.Discounts[0].Amount.String())
+	})
+
 	t.Run("skips discount when unit discount is zero", func(t *testing.T) {
 		ksefLine := &ksef.Line{
 			Name:          "No Discount Item",
