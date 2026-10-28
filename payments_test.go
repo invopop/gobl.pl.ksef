@@ -74,6 +74,16 @@ func TestNewPayment(t *testing.T) {
 		assert.Equal(t, result, pay)
 	})
 
+	t.Run("should write the detail of other payment means", func(t *testing.T) {
+		payment := &bill.PaymentDetails{
+			Instructions: &pay.Instructions{Key: pay.MeansKeyOther, Detail: "Przelew 30 dni"},
+		}
+		result := ksef.NewPayment(payment, &bill.Totals{})
+
+		assert.Equal(t, "1", result.OtherPaymentMeanMarker)
+		assert.Equal(t, "Przelew 30 dni", result.OtherPaymentMean)
+	})
+
 	t.Run("should use other payment marker when key without extension", func(t *testing.T) {
 		payment := &bill.PaymentDetails{
 			Instructions: &pay.Instructions{

@@ -607,9 +607,9 @@ func (inv *Inv) parseInvoiceData(goblInv *bill.Invoice) error {
 		}
 	}
 
-	// Map KursWalutyZ to ExchangeRates for foreign currency invoices
-	if inv.ExchangeRate != "" && goblInv.Currency != currency.PLN {
-		rate, err := num.AmountFromString(inv.ExchangeRate)
+	// Map the exchange rate to ExchangeRates for foreign currency invoices
+	if xr := inv.exchangeRate(); xr != "" && goblInv.Currency != currency.PLN {
+		rate, err := num.AmountFromString(xr)
 		if err != nil {
 			return fmt.Errorf("parsing exchange rate: %w", err)
 		}
@@ -843,6 +843,36 @@ func (inv *Inv) parseLines(goblInv *bill.Invoice) error {
 	}
 
 	return nil
+}
+
+// exchangeRate returns the rate to PLN: KursWalutyZ, else the lines'
+// KursWaluty, else the VAT in PLN (P_14_xW) over the VAT (P_14_x).
+func (inv *Inv) exchangeRate() string {
+	if inv.ExchangeRate != "" {
+		return inv.ExchangeRate
+	}
+	for _, l := range inv.Lines {
+		if l.CurrencyRate != "" {
+			return l.CurrencyRate
+		}
+	}
+	vat, pln := num.MakeAmount(0, 2), num.MakeAmount(0, 2)
+	for _, p := range [][2]string{
+		{inv.StandardRateTax, inv.StandardRateTaxConvertedToPln},
+		{inv.ReducedRateTax, inv.ReducedRateTaxConvertedToPln},
+		{inv.SuperReducedRateTax, inv.SuperReducedRateTaxConvertedToPln},
+		{inv.TaxiRateTax, inv.TaxiRateTaxConvertedToPln},
+	} {
+		v, err1 := parseAmount(p[0])
+		w, err2 := parseAmount(p[1])
+		if err1 == nil && err2 == nil {
+			vat, pln = vat.Add(v), pln.Add(w)
+		}
+	}
+	if vat.IsZero() || pln.IsZero() {
+		return ""
+	}
+	return pln.RescaleUp(6).Divide(vat).String()
 }
 
 // parsePrepaymentTotals builds bill.Totals directly from the invoice-level

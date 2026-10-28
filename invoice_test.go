@@ -1027,6 +1027,46 @@ func TestParsePaidInFull(t *testing.T) {
 		require.Len(t, inv.Payment.Advances, 1)
 		assert.Equal(t, "500.00", inv.Payment.Advances[0].Amount.String())
 	})
+
+	t.Run("does not create a zero advance for a settled invoice", func(t *testing.T) {
+		doc := testSettlementDoc()
+		doc.Inv.TotalAmountDue = "0.00"
+		doc.Inv.StandardRateNetSale = "0"
+		doc.Inv.StandardRateTax = "0"
+		doc.Inv.Payment = &ksef.Payment{PaidMarker: "1", PaymentDate: "2026-02-01"}
+
+		inv, err := doc.ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, inv.Payment.Advances, 1)
+		assert.Equal(t, "12300.00", inv.Payment.Advances[0].Amount.String())
+		assert.Equal(t, "0.00", inv.Totals.Due.String())
+	})
+}
+
+func TestParseOtherPaymentMean(t *testing.T) {
+	otherDoc := func(text string) *ksef.Invoice {
+		doc := testPrepaymentDoc()
+		doc.Inv.Payment.PaymentMean = ""
+		doc.Inv.Payment.OtherPaymentMeanMarker = "1"
+		doc.Inv.Payment.OtherPaymentMean = text
+		return doc
+	}
+
+	t.Run("maps free text to other with a detail", func(t *testing.T) {
+		inv, err := otherDoc("Przelew 30 dni ").ToGOBL()
+		require.NoError(t, err)
+		assert.Equal(t, pay.MeansKeyOther, inv.Payment.Instructions.Key)
+		assert.Equal(t, "Przelew 30 dni", inv.Payment.Instructions.Detail)
+	})
+
+	t.Run("keeps the text without bank accounts", func(t *testing.T) {
+		doc := otherDoc("POLECENIE ZAPŁATY")
+		doc.Inv.Payment.BankAccounts = nil
+		inv, err := doc.ToGOBL()
+		require.NoError(t, err)
+		require.NotNil(t, inv.Payment.Instructions)
+		assert.Equal(t, "POLECENIE ZAPŁATY", inv.Payment.Instructions.Detail)
+	})
 }
 
 func TestParseTermDescription(t *testing.T) {
@@ -2122,6 +2162,44 @@ func TestParseExchangeRate(t *testing.T) {
 
 		_, err := doc.ToGOBL()
 		require.NoError(t, err)
+	})
+
+	eurDoc := func() *ksef.Invoice {
+		doc := testSettlementDoc()
+		doc.Inv.CurrencyCode = "EUR"
+		doc.Inv.InvoiceType = "VAT"
+		doc.Inv.AdvanceInvoices = nil
+		doc.Inv.StandardRateNetSale = "10000.00"
+		doc.Inv.StandardRateTax = "2300.00"
+		doc.Inv.StandardRateTaxConvertedToPln = "9938.53"
+		doc.Inv.TotalAmountDue = "12300.00"
+		return doc
+	}
+
+	t.Run("uses the declared line KursWaluty", func(t *testing.T) {
+		doc := eurDoc()
+		doc.Inv.Lines[0].CurrencyRate = "4.3171"
+
+		inv, err := doc.ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, inv.ExchangeRates, 1)
+		assert.Equal(t, "4.3171", inv.ExchangeRates[0].Amount.String())
+	})
+
+	t.Run("does not derive a rate without the VAT in PLN", func(t *testing.T) {
+		doc := eurDoc()
+		doc.Inv.StandardRateTaxConvertedToPln = "0"
+
+		inv, err := doc.ToGOBL()
+		require.NoError(t, err)
+		assert.Empty(t, inv.ExchangeRates)
+	})
+
+	t.Run("derives the rate from the VAT in PLN", func(t *testing.T) {
+		inv, err := eurDoc().ToGOBL()
+		require.NoError(t, err)
+		require.Len(t, inv.ExchangeRates, 1)
+		assert.Equal(t, "4.321100", inv.ExchangeRates[0].Amount.String())
 	})
 }
 

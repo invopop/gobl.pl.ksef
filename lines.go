@@ -286,10 +286,9 @@ func (l *Line) ToGOBL() (*bill.Line, error) {
 		}
 	}
 
-	// Parse discount — P_10 is the total line discount per the KSeF spec,
-	// map it directly.
+	// Parse discount
 	if l.Discount != "" {
-		discount, err := parseAmount(l.Discount)
+		discount, err := l.parseDiscount(line)
 		if err != nil {
 			return nil, err
 		}
@@ -325,6 +324,51 @@ func (l *Line) ToGOBL() (*bill.Line, error) {
 	}
 
 	return line, nil
+}
+
+// parseDiscount returns P_10 per unit, with its sign flipped, or applied to
+// the gross price when that matches the line total, otherwise P_10 as the
+// line discount.
+func (l *Line) parseDiscount(line *bill.Line) (num.Amount, error) {
+	discount, err := parseAmount(l.Discount)
+	if err != nil || discount.IsZero() || line.Item.Price == nil {
+		return discount, err
+	}
+	totalStr := l.NetPriceTotal
+	if l.NetUnitPrice == "" && l.GrossUnitPrice != "" {
+		totalStr = l.GrossPriceTotal
+	}
+	total, err := parseAmount(totalStr)
+	if err != nil {
+		return discount, nil
+	}
+
+	qty := line.Quantity.Abs()
+	sum := func(price num.Amount) num.Amount {
+		return price.RescaleUp(price.Exp() + qty.Exp() + 2).Multiply(qty).Abs()
+	}
+	match := func(price, total num.Amount) (num.Amount, bool) {
+		s := sum(price)
+		perUnit := discount.Abs().RescaleUp(discount.Exp() + qty.Exp()).Multiply(qty)
+		for _, d := range []num.Amount{discount.Abs(), perUnit} {
+			if s.Subtract(d).Subtract(total.Abs()).Abs().Compare(num.MakeAmount(1, 2)) <= 0 {
+				return d, true
+			}
+		}
+		return num.Amount{}, false
+	}
+
+	if d, ok := match(*line.Item.Price, total); ok {
+		return d, nil
+	}
+	grossPrice, err1 := parseAmount(l.GrossUnitPrice)
+	grossTotal, err2 := parseAmount(l.GrossPriceTotal)
+	if err1 == nil && err2 == nil {
+		if _, ok := match(grossPrice, grossTotal); ok {
+			return sum(*line.Item.Price).Subtract(total.Abs()), nil
+		}
+	}
+	return discount, nil
 }
 
 // parseAmount parses a string amount to num.Amount
